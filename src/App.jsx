@@ -6,6 +6,14 @@ fontLink.rel = "stylesheet";
 fontLink.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:wght@400;500;600&display=swap";
 document.head.appendChild(fontLink);
 
+// Ensure proper mobile scaling
+if (!document.querySelector('meta[name="viewport"]')) {
+  const vp = document.createElement("meta");
+  vp.name = "viewport";
+  vp.content = "width=device-width, initial-scale=1.0";
+  document.head.appendChild(vp);
+}
+
 /* ─── DESIGN TOKENS ─── */
 const C = {
   rust:    "#B84A1E",
@@ -25,13 +33,18 @@ const C = {
 
 const BASE_STYLE = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${C.cream}; }
+  html, body { background: ${C.cream}; width: 100%; overflow-x: hidden; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes shimmer {
     0%,100% { opacity: 0.6; } 50% { opacity: 1; }
+  }
+  @media (max-width: 600px) {
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .stat-grid { grid-template-columns: 1fr 1fr !important; }
+    .hide-mobile { display: none !important; }
   }
 `;
 
@@ -202,7 +215,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         ))}
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px" }}>
 
         {/* ── DASHBOARD ── */}
         {tab === "dashboard" && (
@@ -210,7 +223,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 6 }}>Goeiedag! 👋</h2>
             <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Hier is een overzicht van je soepbusiness deze week.</p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(155px,1fr))", gap: 14, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
               {[
                 { label: "Actieve klanten", val: actief.length,       icon: "👥", color: C.rust },
                 { label: "Abonnees",         val: abonnees.length,    icon: "⭐", color: C.sage },
@@ -225,7 +238,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px,1fr))", gap: 16 }}>
               <Card>
                 <h3 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 14, fontSize: 17 }}>🍲 Soepen week {WEEK_NR}</h3>
                 {s1 && s2 ? [s1, s2].map((s, i) => (
@@ -318,7 +331,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             </div>
 
             {actief.map(k => (
-              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px" }}>
+              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", flexWrap: "wrap" }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: k.abonnee ? `linear-gradient(135deg,${C.sage},${C.sageLt})` : `linear-gradient(135deg,${C.rustLight},${C.rust})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                   {k.abonnee ? "⭐" : "🛒"}
                 </div>
@@ -421,7 +434,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         <InputField label="Volledige naam" value={newK.naam} onChange={v => setNewK(p=>({...p,naam:v}))} />
         <InputField label="E-mailadres" value={newK.email} onChange={v => setNewK(p=>({...p,email:v}))} type="email" />
         <InputField label="Telefoonnummer" value={newK.tel} onChange={v => setNewK(p=>({...p,tel:v}))} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))", gap: 12 }}>
           <InputField label="Straat + nr" value={newK.straat} onChange={v => setNewK(p=>({...p,straat:v}))} />
           <InputField label="Gemeente" value={newK.gemeente} onChange={v => setNewK(p=>({...p,gemeente:v}))} />
         </div>
@@ -523,7 +536,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
         ))}
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 12px" }}>
 
         {/* ── WEEKMENU ── */}
         {tab === "weekmenu" && (
