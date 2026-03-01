@@ -1,4 +1,4 @@
-«'import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 /* ─── GOOGLE FONTS ─── */
 const fontLink = document.createElement("link");
