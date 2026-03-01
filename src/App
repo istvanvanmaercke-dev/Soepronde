@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+«'import { useState, useEffect } from "react";
 
 /* ─── GOOGLE FONTS ─── */
 const fontLink = document.createElement("link");
@@ -33,7 +33,7 @@ const C = {
 
 const BASE_STYLE = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: ${C.cream}; width: 100%; overflow-x: hidden; }
+  html, body, #root { background: ${C.cream}; width: 100%; min-height: 100vh; overflow-x: hidden; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -188,7 +188,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -215,7 +215,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         ))}
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "16px 12px" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
 
         {/* ── DASHBOARD ── */}
         {tab === "dashboard" && (
@@ -509,7 +509,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -536,7 +536,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
         ))}
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px 12px" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
 
         {/* ── WEEKMENU ── */}
         {tab === "weekmenu" && (
@@ -732,7 +732,7 @@ function LoginScreen({ klanten, onLogin }) {
   }
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", width: "100%", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <style>{BASE_STYLE}</style>
 
       <div style={{ width: "100%", maxWidth: 420, animation: "fadeUp .4s ease" }}>
@@ -800,55 +800,24 @@ function LoginScreen({ klanten, onLogin }) {
 }
 
 /* ══════════════════════════════════════════
-   MAIN APP  — met permanente opslag
+   MAIN APP  — met localStorage opslag
 ══════════════════════════════════════════ */
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
 export default function App() {
-  const [session, setSession]    = useState(null);
-  const [klanten, setKlantenRaw] = useState(INIT_KLANTEN);
-  const [soepen,  setSoepenRaw]  = useState(INIT_SOEPEN);
-  const [weekMenu, setWeekMenuRaw] = useState([1, 2]);
-  const [loaded, setLoaded]      = useState(false);
+  const [session, setSession] = useState(null);
+  const [klanten, setKlantenRaw] = useState(() => load("sr:klanten", INIT_KLANTEN));
+  const [soepen,  setSoepenRaw]  = useState(() => load("sr:soepen",  INIT_SOEPEN));
+  const [weekMenu, setWeekMenuRaw] = useState(() => load("sr:weekmenu", [1, 2]));
 
-  /* ── laden bij opstarten ── */
-  useEffect(() => {
-    async function load() {
-      try {
-        const [rK, rS, rW] = await Promise.all([
-          window.storage.get("soepkelder:klanten",  true).catch(() => null),
-          window.storage.get("soepkelder:soepen",   true).catch(() => null),
-          window.storage.get("soepkelder:weekmenu", true).catch(() => null),
-        ]);
-        if (rK) setKlantenRaw(JSON.parse(rK.value));
-        if (rS) setSoepenRaw(JSON.parse(rS.value));
-        if (rW) setWeekMenuRaw(JSON.parse(rW.value));
-      } catch (_) { /* eerste keer: geen data */ }
-      setLoaded(true);
-    }
-    load();
-  }, []);
-
-  /* ── wrapper-setters die ook opslaan ── */
-  async function setKlanten(val) {
-    setKlantenRaw(val);
-    try { await window.storage.set("soepkelder:klanten", JSON.stringify(val), true); } catch(_) {}
-  }
-  async function setSoepen(val) {
-    setSoepenRaw(val);
-    try { await window.storage.set("soepkelder:soepen", JSON.stringify(val), true); } catch(_) {}
-  }
-  async function setWeekMenu(val) {
-    setWeekMenuRaw(val);
-    try { await window.storage.set("soepkelder:weekmenu", JSON.stringify(val), true); } catch(_) {}
-  }
-
-  /* ── laadscherm ── */
-  if (!loaded) return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-      <style>{BASE_STYLE}</style>
-      <div style={{ fontSize: 56, animation: "shimmer 1.2s infinite" }}>🍵</div>
-      <div style={{ color: C.brownLight, fontSize: 15 }}>Gegevens laden…</div>
-    </div>
-  );
+  function setKlanten(val)  { setKlantenRaw(val);  save("sr:klanten",  val); }
+  function setSoepen(val)   { setSoepenRaw(val);   save("sr:soepen",   val); }
+  function setWeekMenu(val) { setWeekMenuRaw(val); save("sr:weekmenu", val); }
 
   function handleLogin(role, klant) {
     setSession(role === "admin" ? { role } : { role: "klant", klantId: klant.id });
