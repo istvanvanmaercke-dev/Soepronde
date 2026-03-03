@@ -6,14 +6,6 @@ fontLink.rel = "stylesheet";
 fontLink.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:wght@400;500;600&display=swap";
 document.head.appendChild(fontLink);
 
-// Ensure proper mobile scaling
-if (!document.querySelector('meta[name="viewport"]')) {
-  const vp = document.createElement("meta");
-  vp.name = "viewport";
-  vp.content = "width=device-width, initial-scale=1.0";
-  document.head.appendChild(vp);
-}
-
 /* ─── DESIGN TOKENS ─── */
 const C = {
   rust:    "#B84A1E",
@@ -33,18 +25,13 @@ const C = {
 
 const BASE_STYLE = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { background: ${C.cream}; width: 100%; min-height: 100vh; overflow-x: hidden; }
+  body { background: ${C.cream}; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes shimmer {
     0%,100% { opacity: 0.6; } 50% { opacity: 1; }
-  }
-  @media (max-width: 600px) {
-    .grid-2 { grid-template-columns: 1fr !important; }
-    .stat-grid { grid-template-columns: 1fr 1fr !important; }
-    .hide-mobile { display: none !important; }
   }
 `;
 
@@ -188,7 +175,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -196,7 +183,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ fontSize: 36 }}>🍵</div>
           <div>
-            <div style={{ fontFamily: "Playfair Display, serif", color: "#fff", fontSize: 22, fontWeight: 700 }}>Soepronde</div>
+            <div style={{ fontFamily: "Playfair Display, serif", color: "#fff", fontSize: 22, fontWeight: 700 }}>De Soepkelder</div>
             <div style={{ color: "rgba(255,255,255,.7)", fontSize: 12, letterSpacing: .5 }}>BEHEERPORTAAL • WEEK {WEEK_NR}</div>
           </div>
         </div>
@@ -215,7 +202,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         ))}
       </div>
 
-      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
 
         {/* ── DASHBOARD ── */}
         {tab === "dashboard" && (
@@ -223,7 +210,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 6 }}>Goeiedag! 👋</h2>
             <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Hier is een overzicht van je soepbusiness deze week.</p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(155px,1fr))", gap: 14, marginBottom: 24 }}>
               {[
                 { label: "Actieve klanten", val: actief.length,       icon: "👥", color: C.rust },
                 { label: "Abonnees",         val: abonnees.length,    icon: "⭐", color: C.sage },
@@ -238,7 +225,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px,1fr))", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <Card>
                 <h3 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 14, fontSize: 17 }}>🍲 Soepen week {WEEK_NR}</h3>
                 {s1 && s2 ? [s1, s2].map((s, i) => (
@@ -331,7 +318,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             </div>
 
             {actief.map(k => (
-              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", flexWrap: "wrap" }}>
+              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px" }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: k.abonnee ? `linear-gradient(135deg,${C.sage},${C.sageLt})` : `linear-gradient(135deg,${C.rustLight},${C.rust})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                   {k.abonnee ? "⭐" : "🛒"}
                 </div>
@@ -434,7 +421,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         <InputField label="Volledige naam" value={newK.naam} onChange={v => setNewK(p=>({...p,naam:v}))} />
         <InputField label="E-mailadres" value={newK.email} onChange={v => setNewK(p=>({...p,email:v}))} type="email" />
         <InputField label="Telefoonnummer" value={newK.tel} onChange={v => setNewK(p=>({...p,tel:v}))} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <InputField label="Straat + nr" value={newK.straat} onChange={v => setNewK(p=>({...p,straat:v}))} />
           <InputField label="Gemeente" value={newK.gemeente} onChange={v => setNewK(p=>({...p,gemeente:v}))} />
         </div>
@@ -509,7 +496,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -536,7 +523,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
         ))}
       </div>
 
-      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px" }}>
 
         {/* ── WEEKMENU ── */}
         {tab === "weekmenu" && (
@@ -714,16 +701,11 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
 /* ══════════════════════════════════════════
    LOGIN SCREEN
 ══════════════════════════════════════════ */
-function LoginScreen({ klanten, setKlanten, onLogin }) {
-  const [mode, setMode] = useState("keuze"); // keuze | admin | klant | registreren
+function LoginScreen({ klanten, onLogin }) {
+  const [mode, setMode] = useState("keuze"); // keuze | admin | klant
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [fout, setFout] = useState("");
-  const [regNaam, setRegNaam] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPass, setRegPass] = useState("");
-  const [regTel, setRegTel] = useState("");
-  const [regSuccess, setRegSuccess] = useState(false);
 
   function loginAdmin() {
     if (pass === "admin123") onLogin("admin", null);
@@ -731,28 +713,19 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
   }
 
   function loginKlant() {
-    const k = klanten.find(k => k.email === email && k.wachtwoord === pass && k.actief && !k.wachtend);
+    const k = klanten.find(k => k.email === email && k.wachtwoord === pass && k.actief);
     if (k) onLogin("klant", k);
     else setFout("E-mail of wachtwoord niet herkend.");
   }
 
-  function registreer() {
-    if (!regNaam || !regEmail || !regPass) { setFout("Vul alle velden in."); return; }
-    if (klanten.find(k => k.email === regEmail)) { setFout("Dit e-mailadres is al geregistreerd."); return; }
-    const id = Math.max(0, ...klanten.map(k => k.id)) + 1;
-    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "ochtend", abonnee: false, aantalPerWeek: 1, actief: true, wachtend: false };
-    setKlanten([...klanten, nieuw]);
-    setRegSuccess(true);
-  }
-
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", width: "100%", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <style>{BASE_STYLE}</style>
 
       <div style={{ width: "100%", maxWidth: 420, animation: "fadeUp .4s ease" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 64, marginBottom: 12 }}>🍵</div>
-          <h1 style={{ fontFamily: "Playfair Display, serif", color: C.white, fontSize: 36, fontWeight: 700, textShadow: "0 2px 12px rgba(0,0,0,.2)" }}>Soepronde</h1>
+          <h1 style={{ fontFamily: "Playfair Display, serif", color: C.white, fontSize: 36, fontWeight: 700, textShadow: "0 2px 12px rgba(0,0,0,.2)" }}>De Soepkelder</h1>
           <p style={{ color: "rgba(255,255,255,.8)", marginTop: 6, fontSize: 15, fontStyle: "italic" }}>Ambachtelijke soep aan huis</p>
         </div>
 
@@ -798,33 +771,13 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
               <InputField label="E-mailadres" value={email} onChange={setEmail} type="email" placeholder="jouw@email.be" />
               <InputField label="Wachtwoord" value={pass} onChange={setPass} type="password" placeholder="••••••" />
               {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-              <Btn variant="green" onClick={loginKlant} style={{ width: "100%", marginBottom: 12 }}>Inloggen</Btn>
-              <div style={{ textAlign: "center", fontSize: 13, color: C.brownLight, marginBottom: 4 }}>Nog geen account?</div>
-              <Btn variant="ghost" onClick={() => { setMode("registreren"); setFout(""); }} style={{ width: "100%" }}>✍️ Nieuw account aanmaken</Btn>
-            </>
-          )}
-
-          {mode === "registreren" && (
-            <>
-              <button onClick={() => { setMode("klant"); setFout(""); setRegSuccess(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
-              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>✍️ Account aanmaken</h2>
-              {regSuccess ? (
-                <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-                  <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 10 }}>Account aangemaakt!</h3>
-                  <p style={{ fontSize: 14, color: C.brownLight, lineHeight: 1.6 }}>Je account is aangemaakt! Je kan nu meteen inloggen met je e-mail en wachtwoord.</p>
-                  <Btn variant="green" onClick={() => { setMode("klant"); setRegSuccess(false); setRegNaam(""); setRegEmail(""); setRegPass(""); setRegTel(""); }} style={{ marginTop: 20 }}>Naar inloggen</Btn>
-                </div>
-              ) : (
-                <>
-                  <InputField label="Volledige naam" value={regNaam} onChange={setRegNaam} placeholder="Jan Janssen" />
-                  <InputField label="E-mailadres" value={regEmail} onChange={setRegEmail} type="email" placeholder="jouw@email.be" />
-                  <InputField label="Telefoonnummer" value={regTel} onChange={setRegTel} placeholder="0471 00 00 00" />
-                  <InputField label="Wachtwoord" value={regPass} onChange={setRegPass} type="password" placeholder="Kies een wachtwoord" />
-                  {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-                  <Btn variant="green" onClick={registreer} style={{ width: "100%" }}>✍️ Aanvraag indienen</Btn>
-                </>
-              )}
+              <Btn variant="green" onClick={loginKlant} style={{ width: "100%", marginBottom: 14 }}>Inloggen</Btn>
+              <div style={{ background: C.cream, borderRadius: 10, padding: 12, fontSize: 12, color: C.brownLight }}>
+                <strong>Demo klanten:</strong><br />
+                marie@mail.be / marie123<br />
+                luc@mail.be / luc123<br />
+                els@mail.be / els123
+              </div>
             </>
           )}
         </div>
@@ -834,46 +787,29 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
 }
 
 /* ══════════════════════════════════════════
-   MAIN APP  — met localStorage opslag
+   MAIN APP
 ══════════════════════════════════════════ */
-function load(key, fallback) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
-}
-function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
-}
-
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [klanten, setKlantenRaw] = useState(() => load("sr:klanten", INIT_KLANTEN));
-  const [soepen,  setSoepenRaw]  = useState(() => load("sr:soepen",  INIT_SOEPEN));
-  const [weekMenu, setWeekMenuRaw] = useState(() => load("sr:weekmenu", [1, 2]));
-
-  function setKlanten(val)  { setKlantenRaw(val);  save("sr:klanten",  val); }
-  function setSoepen(val)   { setSoepenRaw(val);   save("sr:soepen",   val); }
-  function setWeekMenu(val) { setWeekMenuRaw(val); save("sr:weekmenu", val); }
+  const [session, setSession] = useState(null); // null | {role:"admin"} | {role:"klant", klant}
+  const [klanten, setKlanten] = useState(INIT_KLANTEN);
+  const [soepen, setSoepen] = useState(INIT_SOEPEN);
+  const [weekMenu, setWeekMenu] = useState([1, 2]); // soep IDs
 
   function handleLogin(role, klant) {
-    setSession(role === "admin" ? { role } : { role: "klant", klantId: klant.id });
+    setSession(role === "admin" ? { role } : { role: "klant", klant });
   }
+
   function handleLogout() { setSession(null); }
 
-  if (!session) return <LoginScreen klanten={klanten} setKlanten={setKlanten} onLogin={handleLogin} />;
+  function updateKlant(updated) {
+    setSession(s => ({ ...s, klant: updated }));
+  }
+
+  if (!session) return <LoginScreen klanten={klanten} onLogin={handleLogin} />;
 
   if (session.role === "admin") {
     return <AdminPortal klanten={klanten} setKlanten={setKlanten} soepen={soepen} setSoepen={setSoepen} weekMenu={weekMenu} setWeekMenu={setWeekMenu} onLogout={handleLogout} />;
   }
 
-  const liveKlant = klanten.find(k => k.id === session.klantId);
-  if (!liveKlant) return <LoginScreen klanten={klanten} onLogin={handleLogin} />;
-
-  return <KlantPortal
-    klant={liveKlant}
-    setKlant={(updated) => setKlanten(klanten.map(k => k.id === updated.id ? updated : k))}
-    soepen={soepen}
-    weekMenu={weekMenu}
-    setKlanten={setKlanten}
-    klanten={klanten}
-    onLogout={handleLogout}
-  />;
+  return <KlantPortal klant={session.klant} setKlant={updateKlant} soepen={soepen} weekMenu={weekMenu} setKlanten={setKlanten} klanten={klanten} onLogout={handleLogout} />;
 }
