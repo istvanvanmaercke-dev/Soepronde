@@ -565,16 +565,19 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
 ══════════════════════════════════════════ */
 function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, bestellingen, setBestellingen, onLogout }) {
   const [tab, setTab] = useState("weekmenu");
-  const [besteld, setBesteld] = useState({ s1: false, s2: false });
+  const [aantal, setAantal] = useState({ s1: 0, s2: 0 });
   const [bestellingGedaan, setBestellingGedaan] = useState(false);
 
   const s1 = soepen.find(s => s.id === weekMenu[0]);
   const s2 = soepen.find(s => s.id === weekMenu[1]);
-  const aantalBesteld = [besteld.s1, besteld.s2].filter(Boolean).length;
+  const aantalBesteld = aantal.s1 + aantal.s2;
   const kostenBestelling = aantalBesteld * prijs(klant);
 
   function bevestigBestelling() {
-    const soepNamen = [besteld.s1 && s1, besteld.s2 && s2].filter(Boolean).map(s => s.naam);
+    const soepNamen = [
+      ...Array(aantal.s1).fill(s1?.naam).filter(Boolean),
+      ...Array(aantal.s2).fill(s2?.naam).filter(Boolean),
+    ];
     const bestelling = {
       id: Date.now(),
       klantId: klant.id,
@@ -693,18 +696,19 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                     { key: "s1", soep: s1 },
                     { key: "s2", soep: s2 },
                   ].filter(x => x.soep).map(({ key, soep }) => (
-                    <div key={key} onClick={() => setBesteld(p => ({ ...p, [key]: !p[key] }))}
-                      style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px", borderRadius: 12, marginBottom: 10, cursor: "pointer", border: `2px solid ${besteld[key] ? C.sage : C.creamDark}`, background: besteld[key] ? "#E4EFD9" : C.cream, transition: "all .2s" }}>
+                    <div key={key} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px", borderRadius: 12, marginBottom: 10, border: `2px solid ${aantal[key] > 0 ? C.sage : C.creamDark}`, background: aantal[key] > 0 ? "#E4EFD9" : C.cream, transition: "all .2s" }}>
                       <span style={{ fontSize: 32 }}>{soep.emoji}</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600 }}>{soep.naam}</div>
                         <div style={{ fontSize: 12, color: C.brownLight }}>{soep.beschrijving}</div>
+                        <div style={{ fontWeight: 700, color: klant.abonnee ? C.sage : C.rust, marginTop: 4 }}>€{prijs(klant).toFixed(2)} / stuk</div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: 700, color: klant.abonnee ? C.sage : C.rust }}>€{prijs(klant).toFixed(2)}</div>
-                        <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${besteld[key] ? C.sage : C.brownLight}`, background: besteld[key] ? C.sage : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, marginTop: 4, marginLeft: "auto" }}>
-                          {besteld[key] ? "✓" : ""}
-                        </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <button onClick={() => setAantal(p => ({ ...p, [key]: Math.max(0, p[key] - 1) }))}
+                          style={{ width: 32, height: 32, borderRadius: "50%", border: `2px solid ${C.brownLight}`, background: "white", cursor: "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", color: C.dark }}>−</button>
+                        <span style={{ fontWeight: 700, fontSize: 18, minWidth: 20, textAlign: "center" }}>{aantal[key]}</span>
+                        <button onClick={() => setAantal(p => ({ ...p, [key]: p[key] + 1 }))}
+                          style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: C.sage, cursor: "pointer", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>+</button>
                       </div>
                     </div>
                   ))}
@@ -727,7 +731,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <div style={{ fontWeight: 700, color: C.dark }}>Totaal</div>
-                      <div style={{ fontSize: 13, color: C.brownLight }}>{aantalBesteld} soep{aantalBesteld !== 1 ? "en" : ""} · {klant.abonnee ? "abonneeprijs" : "losse prijs"}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{aantalBesteld} portie{aantalBesteld !== 1 ? "s" : ""} · {klant.abonnee ? "abonneeprijs" : "losse prijs"}</div>
                     </div>
                     <div style={{ fontFamily: "Playfair Display, serif", fontSize: 28, fontWeight: 700, color: C.rust }}>€{kostenBestelling.toFixed(2)}</div>
                   </div>
