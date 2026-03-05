@@ -6,6 +6,14 @@ fontLink.rel = "stylesheet";
 fontLink.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lora:wght@400;500;600&display=swap";
 document.head.appendChild(fontLink);
 
+// Ensure proper mobile scaling
+if (!document.querySelector('meta[name="viewport"]')) {
+  const vp = document.createElement("meta");
+  vp.name = "viewport";
+  vp.content = "width=device-width, initial-scale=1.0";
+  document.head.appendChild(vp);
+}
+
 /* ─── DESIGN TOKENS ─── */
 const C = {
   rust:    "#B84A1E",
@@ -25,13 +33,18 @@ const C = {
 
 const BASE_STYLE = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: ${C.cream}; }
+  html, body, #root { background: ${C.cream}; width: 100%; min-height: 100vh; overflow-x: hidden; }
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes shimmer {
     0%,100% { opacity: 0.6; } 50% { opacity: 1; }
+  }
+  @media (max-width: 600px) {
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .stat-grid { grid-template-columns: 1fr 1fr !important; }
+    .hide-mobile { display: none !important; }
   }
 `;
 
@@ -125,7 +138,7 @@ function InputField({ label, value, onChange, type = "text", placeholder, option
 /* ══════════════════════════════════════════
    ADMIN PORTAL
 ══════════════════════════════════════════ */
-function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeekMenu, onLogout }) {
+function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeekMenu, bestellingen, setBestellingen, onLogout }) {
   const [tab, setTab] = useState("dashboard");
   const [copied, setCopied] = useState(false);
   const [klantModal, setKlantModal] = useState(false);
@@ -167,15 +180,16 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
   }
 
   const navItems = [
-    { key:"dashboard", icon:"📊", label:"Dashboard" },
-    { key:"weekmenu",  icon:"🍲", label:"Weekmenu" },
-    { key:"klanten",   icon:"👥", label:"Klanten" },
-    { key:"levering",  icon:"🚚", label:"Levering" },
-    { key:"whatsapp",  icon:"💬", label:"WhatsApp" },
+    { key:"dashboard",    icon:"📊", label:"Dashboard" },
+    { key:"weekmenu",     icon:"🍲", label:"Weekmenu" },
+    { key:"klanten",      icon:"👥", label:"Klanten" },
+    { key:"bestellingen", icon:"🛍️", label:"Bestellingen" },
+    { key:"levering",     icon:"🚚", label:"Levering" },
+    { key:"whatsapp",     icon:"💬", label:"WhatsApp" },
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -183,7 +197,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ fontSize: 36 }}>🍵</div>
           <div>
-            <div style={{ fontFamily: "Playfair Display, serif", color: "#fff", fontSize: 22, fontWeight: 700 }}>De Soepkelder</div>
+            <div style={{ fontFamily: "Playfair Display, serif", color: "#fff", fontSize: 22, fontWeight: 700 }}>Soepronde</div>
             <div style={{ color: "rgba(255,255,255,.7)", fontSize: 12, letterSpacing: .5 }}>BEHEERPORTAAL • WEEK {WEEK_NR}</div>
           </div>
         </div>
@@ -202,7 +216,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         ))}
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
 
         {/* ── DASHBOARD ── */}
         {tab === "dashboard" && (
@@ -210,7 +224,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 6 }}>Goeiedag! 👋</h2>
             <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Hier is een overzicht van je soepbusiness deze week.</p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(155px,1fr))", gap: 14, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, marginBottom: 24 }}>
               {[
                 { label: "Actieve klanten", val: actief.length,       icon: "👥", color: C.rust },
                 { label: "Abonnees",         val: abonnees.length,    icon: "⭐", color: C.sage },
@@ -225,7 +239,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px,1fr))", gap: 16 }}>
               <Card>
                 <h3 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 14, fontSize: 17 }}>🍲 Soepen week {WEEK_NR}</h3>
                 {s1 && s2 ? [s1, s2].map((s, i) => (
@@ -305,9 +319,34 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         {/* ── KLANTEN ── */}
         {tab === "klanten" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
               <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust }}>Klanten ({actief.length})</h2>
-              <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Btn small variant="secondary" onClick={() => {
+                  const data = JSON.stringify(klanten, null, 2);
+                  const blob = new Blob([data], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = "soepronde-klanten-backup.json"; a.click();
+                }}>💾 Backup</Btn>
+                <label style={{ cursor: "pointer" }}>
+                  <input type="file" accept=".json" style={{ display: "none" }} onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      try {
+                        const data = JSON.parse(ev.target.result);
+                        if (Array.isArray(data)) { setKlanten(data); alert("✅ Klanten hersteld!"); }
+                        else alert("❌ Ongeldig bestand.");
+                      } catch { alert("❌ Fout bij inlezen."); }
+                    };
+                    reader.readAsText(file);
+                  }} />
+                  <span style={{ background: C.creamDark, color: C.dark, borderRadius: 10, padding: "7px 14px", fontSize: 13, fontFamily: "Lora, serif", fontWeight: 600, cursor: "pointer" }}>📂 Herstel</span>
+                </label>
+                <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
+              </div>
             </div>
 
             {/* Filter tabs */}
@@ -318,7 +357,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             </div>
 
             {actief.map(k => (
-              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px" }}>
+              <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", flexWrap: "wrap" }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: k.abonnee ? `linear-gradient(135deg,${C.sage},${C.sageLt})` : `linear-gradient(135deg,${C.rustLight},${C.rust})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                   {k.abonnee ? "⭐" : "🛒"}
                 </div>
@@ -377,6 +416,67 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
           </div>
         )}
 
+        {/* ── BESTELLINGEN ── */}
+        {tab === "bestellingen" && (
+          <div style={{ animation: "fadeUp .3s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust }}>🛍️ Bestellingen — Week {WEEK_NR}</h2>
+              {bestellingen.filter(b => b.week === WEEK_NR).length > 0 && (
+                <Btn small variant="secondary" onClick={() => setBestellingen(bestellingen.map(b => b.week === WEEK_NR ? {...b, afgehandeld: true} : b))}>
+                  ✅ Alles afhandelen
+                </Btn>
+              )}
+            </div>
+
+            {bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).length === 0 && bestellingen.filter(b => b.week === WEEK_NR).length === 0 && (
+              <Card style={{ textAlign: "center", padding: 40 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+                <p style={{ color: C.brownLight }}>Nog geen bestellingen deze week.</p>
+              </Card>
+            )}
+
+            {bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).length > 0 && (
+              <Card style={{ marginBottom: 20 }}>
+                <h3 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 16 }}>
+                  ⏳ Openstaand ({bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).length})
+                </h3>
+                {bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).map(b => (
+                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700 }}>{b.klantNaam}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
+                      <div style={{ fontSize: 12, color: C.brownLight }}>{b.datum}</div>
+                    </div>
+                    <div style={{ fontWeight: 700, color: C.rust }}>€{b.bedrag.toFixed(2)}</div>
+                    <Btn small variant="green" onClick={() => setBestellingen(bestellingen.map(x => x.id === b.id ? {...x, afgehandeld: true} : x))}>✅</Btn>
+                  </div>
+                ))}
+                <div style={{ marginTop: 14, padding: "10px 0", display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+                  <span>Totaal openstaand</span>
+                  <span style={{ color: C.rust }}>€{bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).reduce((s,b) => s + b.bedrag, 0).toFixed(2)}</span>
+                </div>
+              </Card>
+            )}
+
+            {bestellingen.filter(b => b.week === WEEK_NR && b.afgehandeld).length > 0 && (
+              <Card>
+                <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 16 }}>
+                  ✅ Afgehandeld ({bestellingen.filter(b => b.week === WEEK_NR && b.afgehandeld).length})
+                </h3>
+                {bestellingen.filter(b => b.week === WEEK_NR && b.afgehandeld).map(b => (
+                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, opacity: 0.6, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700 }}>{b.klantNaam}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
+                    </div>
+                    <div style={{ fontWeight: 700, color: C.sage }}>€{b.bedrag.toFixed(2)}</div>
+                  </div>
+                ))}
+              </Card>
+            )}
+          </div>
+        )}
+
         {/* ── WHATSAPP ── */}
         {tab === "whatsapp" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
@@ -421,7 +521,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         <InputField label="Volledige naam" value={newK.naam} onChange={v => setNewK(p=>({...p,naam:v}))} />
         <InputField label="E-mailadres" value={newK.email} onChange={v => setNewK(p=>({...p,email:v}))} type="email" />
         <InputField label="Telefoonnummer" value={newK.tel} onChange={v => setNewK(p=>({...p,tel:v}))} />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))", gap: 12 }}>
           <InputField label="Straat + nr" value={newK.straat} onChange={v => setNewK(p=>({...p,straat:v}))} />
           <InputField label="Gemeente" value={newK.gemeente} onChange={v => setNewK(p=>({...p,gemeente:v}))} />
         </div>
@@ -463,7 +563,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
 /* ══════════════════════════════════════════
    KLANT PORTAL
 ══════════════════════════════════════════ */
-function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, onLogout }) {
+function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, bestellingen, setBestellingen, onLogout }) {
   const [tab, setTab] = useState("weekmenu");
   const [besteld, setBesteld] = useState({ s1: false, s2: false });
   const [bestellingGedaan, setBestellingGedaan] = useState(false);
@@ -474,6 +574,19 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
   const kostenBestelling = aantalBesteld * prijs(klant);
 
   function bevestigBestelling() {
+    const soepNamen = [besteld.s1 && s1, besteld.s2 && s2].filter(Boolean).map(s => s.naam);
+    const bestelling = {
+      id: Date.now(),
+      klantId: klant.id,
+      klantNaam: klant.naam,
+      soepen: soepNamen,
+      levering: klant.levering,
+      bedrag: kostenBestelling,
+      week: WEEK_NR,
+      datum: new Date().toLocaleDateString("nl-BE"),
+      afgehandeld: false,
+    };
+    setBestellingen([...bestellingen, bestelling]);
     setBestellingGedaan(true);
   }
 
@@ -496,7 +609,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
   ];
 
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: C.cream, width: "100%" }}>
       <style>{BASE_STYLE}</style>
 
       {/* Header */}
@@ -523,7 +636,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
         ))}
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "24px 16px" }}>
+      <div style={{ maxWidth: "100%", margin: "0 auto", padding: "16px 24px" }}>
 
         {/* ── WEEKMENU ── */}
         {tab === "weekmenu" && (
@@ -701,11 +814,16 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, o
 /* ══════════════════════════════════════════
    LOGIN SCREEN
 ══════════════════════════════════════════ */
-function LoginScreen({ klanten, onLogin }) {
-  const [mode, setMode] = useState("keuze"); // keuze | admin | klant
+function LoginScreen({ klanten, setKlanten, onLogin }) {
+  const [mode, setMode] = useState("keuze"); // keuze | admin | klant | registreren
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [fout, setFout] = useState("");
+  const [regNaam, setRegNaam] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPass, setRegPass] = useState("");
+  const [regTel, setRegTel] = useState("");
+  const [regSuccess, setRegSuccess] = useState(false);
 
   function loginAdmin() {
     if (pass === "admin123") onLogin("admin", null);
@@ -713,19 +831,28 @@ function LoginScreen({ klanten, onLogin }) {
   }
 
   function loginKlant() {
-    const k = klanten.find(k => k.email === email && k.wachtwoord === pass && k.actief);
+    const k = klanten.find(k => k.email === email && k.wachtwoord === pass && k.actief && !k.wachtend);
     if (k) onLogin("klant", k);
     else setFout("E-mail of wachtwoord niet herkend.");
   }
 
+  function registreer() {
+    if (!regNaam || !regEmail || !regPass) { setFout("Vul alle velden in."); return; }
+    if (klanten.find(k => k.email === regEmail)) { setFout("Dit e-mailadres is al geregistreerd."); return; }
+    const id = Math.max(0, ...klanten.map(k => k.id)) + 1;
+    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "ochtend", abonnee: false, aantalPerWeek: 1, actief: true, wachtend: false };
+    setKlanten([...klanten, nieuw]);
+    setRegSuccess(true);
+  }
+
   return (
-    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", width: "100%", background: `linear-gradient(160deg, ${C.rustDark} 0%, ${C.cream} 55%, ${C.creamDark} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <style>{BASE_STYLE}</style>
 
       <div style={{ width: "100%", maxWidth: 420, animation: "fadeUp .4s ease" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ fontSize: 64, marginBottom: 12 }}>🍵</div>
-          <h1 style={{ fontFamily: "Playfair Display, serif", color: C.white, fontSize: 36, fontWeight: 700, textShadow: "0 2px 12px rgba(0,0,0,.2)" }}>De Soepkelder</h1>
+          <h1 style={{ fontFamily: "Playfair Display, serif", color: C.white, fontSize: 36, fontWeight: 700, textShadow: "0 2px 12px rgba(0,0,0,.2)" }}>Soepronde</h1>
           <p style={{ color: "rgba(255,255,255,.8)", marginTop: 6, fontSize: 15, fontStyle: "italic" }}>Ambachtelijke soep aan huis</p>
         </div>
 
@@ -771,13 +898,33 @@ function LoginScreen({ klanten, onLogin }) {
               <InputField label="E-mailadres" value={email} onChange={setEmail} type="email" placeholder="jouw@email.be" />
               <InputField label="Wachtwoord" value={pass} onChange={setPass} type="password" placeholder="••••••" />
               {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-              <Btn variant="green" onClick={loginKlant} style={{ width: "100%", marginBottom: 14 }}>Inloggen</Btn>
-              <div style={{ background: C.cream, borderRadius: 10, padding: 12, fontSize: 12, color: C.brownLight }}>
-                <strong>Demo klanten:</strong><br />
-                marie@mail.be / marie123<br />
-                luc@mail.be / luc123<br />
-                els@mail.be / els123
-              </div>
+              <Btn variant="green" onClick={loginKlant} style={{ width: "100%", marginBottom: 12 }}>Inloggen</Btn>
+              <div style={{ textAlign: "center", fontSize: 13, color: C.brownLight, marginBottom: 4 }}>Nog geen account?</div>
+              <Btn variant="ghost" onClick={() => { setMode("registreren"); setFout(""); }} style={{ width: "100%" }}>✍️ Nieuw account aanmaken</Btn>
+            </>
+          )}
+
+          {mode === "registreren" && (
+            <>
+              <button onClick={() => { setMode("klant"); setFout(""); setRegSuccess(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
+              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>✍️ Account aanmaken</h2>
+              {regSuccess ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+                  <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 10 }}>Account aangemaakt!</h3>
+                  <p style={{ fontSize: 14, color: C.brownLight, lineHeight: 1.6 }}>Je account is aangemaakt! Je kan nu meteen inloggen met je e-mail en wachtwoord.</p>
+                  <Btn variant="green" onClick={() => { setMode("klant"); setRegSuccess(false); setRegNaam(""); setRegEmail(""); setRegPass(""); setRegTel(""); }} style={{ marginTop: 20 }}>Naar inloggen</Btn>
+                </div>
+              ) : (
+                <>
+                  <InputField label="Volledige naam" value={regNaam} onChange={setRegNaam} placeholder="Jan Janssen" />
+                  <InputField label="E-mailadres" value={regEmail} onChange={setRegEmail} type="email" placeholder="jouw@email.be" />
+                  <InputField label="Telefoonnummer" value={regTel} onChange={setRegTel} placeholder="0471 00 00 00" />
+                  <InputField label="Wachtwoord" value={regPass} onChange={setRegPass} type="password" placeholder="Kies een wachtwoord" />
+                  {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
+                  <Btn variant="green" onClick={registreer} style={{ width: "100%" }}>✍️ Aanvraag indienen</Btn>
+                </>
+              )}
             </>
           )}
         </div>
@@ -787,29 +934,105 @@ function LoginScreen({ klanten, onLogin }) {
 }
 
 /* ══════════════════════════════════════════
-   MAIN APP
+   SUPABASE CONFIG
+══════════════════════════════════════════ */
+const SB_URL = "https://creatittinunrfbjgsih.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyZWF0aXR0aW51bnJmYmpnc2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1Njc0MTcsImV4cCI6MjA4ODE0MzQxN30.BMX3GHKAoKUGkVsHuwZlQl3Uw3GF7lPfcwhELoCLQ_E";
+const SB_HDR = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" };
+
+async function sbGet(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*`, { headers: SB_HDR });
+  return r.json();
+}
+async function sbUpsert(table, data) {
+  await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: "POST", headers: { ...SB_HDR, Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify(data)
+  });
+}
+async function sbPatch(table, id, data) {
+  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: "PATCH", headers: SB_HDR, body: JSON.stringify(data)
+  });
+}
+
+/* ══════════════════════════════════════════
+   MAIN APP  — met Supabase opslag
 ══════════════════════════════════════════ */
 export default function App() {
-  const [session, setSession] = useState(null); // null | {role:"admin"} | {role:"klant", klant}
-  const [klanten, setKlanten] = useState(INIT_KLANTEN);
-  const [soepen, setSoepen] = useState(INIT_SOEPEN);
-  const [weekMenu, setWeekMenu] = useState([1, 2]); // soep IDs
+  const [session, setSession] = useState(null);
+  const [klanten, setKlanten] = useState([]);
+  const [soepen,  setSoepen]  = useState(INIT_SOEPEN);
+  const [weekMenu, setWeekMenuRaw] = useState([1, 2]);
+  const [bestellingen, setBestellingen] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    async function laad() {
+      try {
+        const [k, b, w] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu")]);
+        setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1})) : INIT_KLANTEN);
+        if (Array.isArray(b)) setBestellingen(b);
+        if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2]);
+      } catch(e) { console.error(e); setKlanten(INIT_KLANTEN); }
+      setLoaded(true);
+    }
+    laad();
+  }, []);
+
+  async function saveKlanten(val) {
+    setKlanten(val);
+    for (const k of val) {
+      await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: k.levering || "ochtend", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
+    }
+  }
+
+  async function saveWeekMenu(val) {
+    setWeekMenuRaw(val);
+    await sbUpsert("weekmenu", { id: 1, soep1: val[0], soep2: val[1] });
+  }
+
+  async function saveBestellingen(val) {
+    const nieuw = val.find(b => !bestellingen.find(x => x.id === b.id));
+    if (nieuw) await sbUpsert("bestellingen", nieuw);
+    else {
+      const gewijzigd = val.find(b => { const o = bestellingen.find(x => x.id === b.id); return o && o.afgehandeld !== b.afgehandeld; });
+      if (gewijzigd) await sbPatch("bestellingen", gewijzigd.id, { afgehandeld: gewijzigd.afgehandeld });
+    }
+    setBestellingen(val);
+  }
+
+  if (!loaded) return (
+    <div style={{ fontFamily: "Lora, serif", minHeight: "100vh", width: "100%", background: C.cream, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <style>{BASE_STYLE}</style>
+      <div style={{ fontSize: 56, animation: "shimmer 1.2s infinite" }}>🍵</div>
+      <div style={{ color: C.brownLight, fontSize: 15 }}>Gegevens laden…</div>
+    </div>
+  );
 
   function handleLogin(role, klant) {
-    setSession(role === "admin" ? { role } : { role: "klant", klant });
+    setSession(role === "admin" ? { role } : { role: "klant", klantId: klant.id });
   }
-
   function handleLogout() { setSession(null); }
 
-  function updateKlant(updated) {
-    setSession(s => ({ ...s, klant: updated }));
-  }
-
-  if (!session) return <LoginScreen klanten={klanten} onLogin={handleLogin} />;
+  if (!session) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
 
   if (session.role === "admin") {
-    return <AdminPortal klanten={klanten} setKlanten={setKlanten} soepen={soepen} setSoepen={setSoepen} weekMenu={weekMenu} setWeekMenu={setWeekMenu} onLogout={handleLogout} />;
+    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={setSoepen} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
   }
 
-  return <KlantPortal klant={session.klant} setKlant={updateKlant} soepen={soepen} weekMenu={weekMenu} setKlanten={setKlanten} klanten={klanten} onLogout={handleLogout} />;
+  const liveKlant = klanten.find(k => k.id === session.klantId);
+  if (!liveKlant) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
+
+  return <KlantPortal
+    klant={liveKlant}
+    setKlant={(updated) => saveKlanten(klanten.map(k => k.id === updated.id ? updated : k))}
+    soepen={soepen}
+    weekMenu={weekMenu}
+    setKlanten={saveKlanten}
+    klanten={klanten}
+    bestellingen={bestellingen}
+    setBestellingen={saveBestellingen}
+    onLogout={handleLogout}
+  />;
 }
