@@ -155,6 +155,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
 
   const s1 = soepen.find(s => s.id === weekMenu[0]);
   const s2 = soepen.find(s => s.id === weekMenu[1]);
+  const s3 = soepen.find(s => s.id === weekMenu[2]);
   const waText = formatWA(s1, s2, WEEK_NR);
 
   function saveKlant() {
@@ -280,13 +281,14 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
             </div>
 
             <Card style={{ marginBottom: 20 }}>
-              <h3 style={{ fontFamily: "Playfair Display, serif", marginBottom: 16, color: C.dark }}>Kies 2 soepen voor deze week</h3>
-              {[0, 1].map(idx => (
+              <h3 style={{ fontFamily: "Playfair Display, serif", marginBottom: 16, color: C.dark }}>Kies soepen voor deze week</h3>
+              {[0, 1, 2].map(idx => (
                 <div key={idx} style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 12, color: C.brownLight, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Soep {idx + 1}</label>
-                  <select value={weekMenu[idx]}
-                    onChange={e => { const m = [...weekMenu]; m[idx] = +e.target.value; setWeekMenu(m); }}
+                  <label style={{ display: "block", fontSize: 12, color: C.brownLight, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Soep {idx + 1} {idx === 2 ? "(optioneel)" : ""}</label>
+                  <select value={weekMenu[idx] || ""}
+                    onChange={e => { const m = [...weekMenu]; m[idx] = e.target.value ? +e.target.value : null; setWeekMenu(m); }}
                     style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${C.creamDark}`, fontFamily: "Lora, serif", fontSize: 14, background: C.cream, color: C.dark }}>
+                    {idx === 2 && <option value="">— Geen derde soep —</option>}
                     {soepen.map(s => <option key={s.id} value={s.id}>{s.emoji} {s.naam}</option>)}
                   </select>
                 </div>
@@ -294,7 +296,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
               {s1 && s2 && (
                 <div style={{ marginTop: 16, padding: 14, background: "#E4EFD9", borderRadius: 12, border: `1px solid ${C.sageLt}` }}>
                   <div style={{ fontSize: 13, color: C.sage, fontWeight: 600 }}>✅ Menu geselecteerd</div>
-                  <div style={{ fontSize: 13, color: C.dark, marginTop: 4 }}>{s1.emoji} {s1.naam} & {s2.emoji} {s2.naam}</div>
+                  <div style={{ fontSize: 13, color: C.dark, marginTop: 4 }}>{s1.emoji} {s1.naam} · {s2.emoji} {s2.naam}{s3 ? ` · ${s3.emoji} ${s3.naam}` : ""}</div>
                 </div>
               )}
             </Card>
@@ -309,7 +311,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
                     <div style={{ fontSize: 12, color: C.brownLight }}>{s.beschrijving}</div>
                   </div>
                   {s.seizoen && <Tag color="gold">{s.seizoen}</Tag>}
-                  {(weekMenu[0] === s.id || weekMenu[1] === s.id) && <Tag color="sage">Deze week</Tag>}
+                  {(weekMenu[0] === s.id || weekMenu[1] === s.id || weekMenu[2] === s.id) && <Tag color="sage">Deze week</Tag>}
                 </div>
               ))}
             </Card>
@@ -443,7 +445,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
                 {bestellingen.filter(b => b.week === WEEK_NR && !b.afgehandeld).map(b => (
                   <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, flexWrap: "wrap" }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700 }}>{b.klantNaam}</div>
+                      <div style={{ fontWeight: 700 }}>{b.klantnaam}</div>
                       <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
                       <div style={{ fontSize: 12, color: C.brownLight }}>{b.datum}</div>
                     </div>
@@ -466,7 +468,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
                 {bestellingen.filter(b => b.week === WEEK_NR && b.afgehandeld).map(b => (
                   <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, opacity: 0.6, flexWrap: "wrap" }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700 }}>{b.klantNaam}</div>
+                      <div style={{ fontWeight: 700 }}>{b.klantnaam}</div>
                       <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
                     </div>
                     <div style={{ fontWeight: 700, color: C.sage }}>€{b.bedrag.toFixed(2)}</div>
@@ -565,23 +567,25 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
 ══════════════════════════════════════════ */
 function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, bestellingen, setBestellingen, onLogout }) {
   const [tab, setTab] = useState("weekmenu");
-  const [aantal, setAantal] = useState({ s1: 0, s2: 0 });
+  const [aantal, setAantal] = useState({ s1: 0, s2: 0, s3: 0 });
   const [bestellingGedaan, setBestellingGedaan] = useState(false);
 
   const s1 = soepen.find(s => s.id === weekMenu[0]);
   const s2 = soepen.find(s => s.id === weekMenu[1]);
-  const aantalBesteld = aantal.s1 + aantal.s2;
+  const s3 = soepen.find(s => s.id === weekMenu[2]);
+  const aantalBesteld = aantal.s1 + aantal.s2 + (aantal.s3 || 0);
   const kostenBestelling = aantalBesteld * prijs(klant);
 
   function bevestigBestelling() {
     const soepNamen = [
       ...Array(aantal.s1).fill(s1?.naam).filter(Boolean),
       ...Array(aantal.s2).fill(s2?.naam).filter(Boolean),
+      ...Array(aantal.s3 || 0).fill(s3?.naam).filter(Boolean),
     ];
     const bestelling = {
       id: Date.now(),
-      klantId: klant.id,
-      klantNaam: klant.naam,
+      klantid: klant.id,
+      klantnaam: klant.naam,
       soepen: soepNamen,
       levering: klant.levering,
       bedrag: kostenBestelling,
@@ -646,7 +650,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
           <div style={{ animation: "fadeUp .3s ease" }}>
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 6 }}>Menu van de week</h2>
             <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Levering donderdag · {klant.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</p>
-            {[s1, s2].filter(Boolean).map((s, i) => (
+            {[s1, s2, s3].filter(Boolean).map((s, i) => (
               <Card key={i} style={{ marginBottom: 16, display: "flex", gap: 18, alignItems: "center", padding: "20px 22px" }}>
                 <div style={{ fontSize: 52 }}>{s.emoji}</div>
                 <div>
@@ -695,6 +699,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                   {[
                     { key: "s1", soep: s1 },
                     { key: "s2", soep: s2 },
+                    { key: "s3", soep: s3 },
                   ].filter(x => x.soep).map(({ key, soep }) => (
                     <div key={key} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px", borderRadius: 12, marginBottom: 10, border: `2px solid ${aantal[key] > 0 ? C.sage : C.creamDark}`, background: aantal[key] > 0 ? "#E4EFD9" : C.cream, transition: "all .2s" }}>
                       <span style={{ fontSize: 32 }}>{soep.emoji}</span>
@@ -967,7 +972,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [klanten, setKlanten] = useState([]);
   const [soepen,  setSoepen]  = useState(INIT_SOEPEN);
-  const [weekMenu, setWeekMenuRaw] = useState([1, 2]);
+  const [weekMenu, setWeekMenuRaw] = useState([1, 2, null]);
   const [bestellingen, setBestellingen] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -977,7 +982,7 @@ export default function App() {
         const [k, b, w] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu")]);
         setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1})) : INIT_KLANTEN);
         if (Array.isArray(b)) setBestellingen(b);
-        if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2]);
+        if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
       } catch(e) { console.error(e); setKlanten(INIT_KLANTEN); }
       setLoaded(true);
     }
@@ -993,7 +998,7 @@ export default function App() {
 
   async function saveWeekMenu(val) {
     setWeekMenuRaw(val);
-    await sbUpsert("weekmenu", { id: 1, soep1: val[0], soep2: val[1] });
+    await sbUpsert("weekmenu", { id: 1, soep1: val[0], soep2: val[1], soep3: val[2] || null });
   }
 
   async function saveBestellingen(val) {
