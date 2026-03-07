@@ -50,11 +50,11 @@ const BASE_STYLE = `
 
 /* ─── SEED DATA ─── */
 const INIT_SOEPEN = [
-  { id: 1, naam: "Tomatensoep", beschrijving: "Zongerijpte tomaten, verse basilicum & een vleugje room", seizoen: "Herfst", emoji: "🍅" },
-  { id: 2, naam: "Wortel-gembersoep", beschrijving: "Zoete wortel, verse gember & kokosmelk", seizoen: "Winter", emoji: "🥕" },
-  { id: 3, naam: "Erwtensoep", beschrijving: "Klassieke snert met rookworst & gerookt spek", seizoen: "Winter", emoji: "🫛" },
-  { id: 4, naam: "Courgette-munt", beschrijving: "Lichte zomersoep met verse munt & citroen", seizoen: "Zomer", emoji: "🥒" },
-  { id: 5, naam: "Pompoensoep", beschrijving: "Romige pompoen met kaneel & nootmuskaat", seizoen: "Herfst", emoji: "🎃" },
+  { id: 1, naam: "Tomatensoep", beschrijving: "Zongerijpte tomaten, verse basilicum & een vleugje room", seizoen: "Herfst", emoji: "🍅", prijs_los: 5.00, prijs_abonnee: 4.50 },
+  { id: 2, naam: "Wortel-gembersoep", beschrijving: "Zoete wortel, verse gember & kokosmelk", seizoen: "Winter", emoji: "🥕", prijs_los: 5.00, prijs_abonnee: 4.50 },
+  { id: 3, naam: "Erwtensoep", beschrijving: "Klassieke snert met rookworst & gerookt spek", seizoen: "Winter", emoji: "🫛", prijs_los: 5.00, prijs_abonnee: 4.50 },
+  { id: 4, naam: "Courgette-munt", beschrijving: "Lichte zomersoep met verse munt & citroen", seizoen: "Zomer", emoji: "🥒", prijs_los: 5.00, prijs_abonnee: 4.50 },
+  { id: 5, naam: "Pompoensoep", beschrijving: "Romige pompoen met kaneel & nootmuskaat", seizoen: "Herfst", emoji: "🎃", prijs_los: 5.00, prijs_abonnee: 4.50 },
 ];
 
 const INIT_KLANTEN = [
@@ -67,7 +67,7 @@ const INIT_KLANTEN = [
 const WEEK_NR = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
 
 /* ─── HELPERS ─── */
-const prijs = (k) => k.abonnee ? 4.50 : 5.00;
+const prijs = (k, soep) => soep ? (k.abonnee ? (soep.prijs_abonnee || 4.50) : (soep.prijs_los || 5.00)) : (k.abonnee ? 4.50 : 5.00);
 const weekOmzetKlant = (k) => k.aantalPerWeek * prijs(k);
 
 function formatWA(s1, s2, week) {
@@ -143,6 +143,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
   const [copied, setCopied] = useState(false);
   const [klantModal, setKlantModal] = useState(false);
   const [soepModal, setSoepModal] = useState(false);
+  const [editSoep, setEditSoep] = useState(null);
   const [editKlant, setEditKlant] = useState(null);
   const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
   const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣" });
@@ -177,7 +178,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
     const id = Math.max(0, ...soepen.map(s=>s.id)) + 1;
     setSoepen([...soepen, { ...newS, id }]);
     setSoepModal(false);
-    setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣" });
+    setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los: 5.00, prijs_abonnee: 4.50 });
   }
 
   const navItems = [
@@ -309,9 +310,11 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{s.naam}</div>
                     <div style={{ fontSize: 12, color: C.brownLight }}>{s.beschrijving}</div>
+                    <div style={{ fontSize: 12, color: C.brownLight, marginTop: 2 }}>Los: €{(s.prijs_los||5).toFixed(2)} · Abonnee: €{(s.prijs_abonnee||4.5).toFixed(2)}</div>
                   </div>
                   {s.seizoen && <Tag color="gold">{s.seizoen}</Tag>}
                   {(weekMenu[0] === s.id || weekMenu[1] === s.id || weekMenu[2] === s.id) && <Tag color="sage">Deze week</Tag>}
+                  <Btn small variant="secondary" onClick={() => { setEditSoep(s); setNewS({...s}); setSoepModal(true); }}>✏️</Btn>
                 </div>
               ))}
             </Card>
@@ -574,7 +577,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
   const s2 = soepen.find(s => s.id === weekMenu[1]);
   const s3 = soepen.find(s => s.id === weekMenu[2]);
   const aantalBesteld = aantal.s1 + aantal.s2 + (aantal.s3 || 0);
-  const kostenBestelling = aantalBesteld * prijs(klant);
+  const kostenBestelling = (aantal.s1 * prijs(klant, s1)) + (aantal.s2 * prijs(klant, s2)) + ((aantal.s3 || 0) * prijs(klant, s3));
 
   function bevestigBestelling() {
     const soepNamen = [
@@ -706,7 +709,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600 }}>{soep.naam}</div>
                         <div style={{ fontSize: 12, color: C.brownLight }}>{soep.beschrijving}</div>
-                        <div style={{ fontWeight: 700, color: klant.abonnee ? C.sage : C.rust, marginTop: 4 }}>€{prijs(klant).toFixed(2)} / stuk</div>
+                        <div style={{ fontWeight: 700, color: klant.abonnee ? C.sage : C.rust, marginTop: 4 }}>€{prijs(klant, soep).toFixed(2)} / stuk</div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <button onClick={() => setAantal(p => ({ ...p, [key]: Math.max(0, p[key] - 1) }))}
@@ -1004,7 +1007,7 @@ export default function App() {
   async function saveSoepen(val) {
     setSoepen(val);
     for (const s of val) {
-      await sbUpsert("soepen", { id: s.id, naam: s.naam, beschrijving: s.beschrijving, seizoen: s.seizoen || "", emoji: s.emoji });
+      await sbUpsert("soepen", { id: s.id, naam: s.naam, beschrijving: s.beschrijving, seizoen: s.seizoen || "", emoji: s.emoji, prijs_los: s.prijs_los || 5.00, prijs_abonnee: s.prijs_abonnee || 4.50 });
     }
   }
 
