@@ -971,7 +971,7 @@ async function sbPatch(table, id, data) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [klanten, setKlanten] = useState([]);
-  const [soepen,  setSoepen]  = useState(INIT_SOEPEN);
+  const [soepen,  setSoepen]  = useState([]);
   const [weekMenu, setWeekMenuRaw] = useState([1, 2, null]);
   const [bestellingen, setBestellingen] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -979,10 +979,15 @@ export default function App() {
   useEffect(() => {
     async function laad() {
       try {
-        const [k, b, w] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu")]);
+        const [k, b, w, sp] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu"), sbGet("soepen")]);
         setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1})) : INIT_KLANTEN);
         if (Array.isArray(b)) setBestellingen(b);
         if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
+        if (Array.isArray(sp) && sp.length > 0) setSoepen(sp);
+        else {
+          setSoepen(INIT_SOEPEN);
+          for (const s of INIT_SOEPEN) await sbUpsert("soepen", s);
+        }
       } catch(e) { console.error(e); setKlanten(INIT_KLANTEN); }
       setLoaded(true);
     }
@@ -993,6 +998,13 @@ export default function App() {
     setKlanten(val);
     for (const k of val) {
       await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: k.levering || "ochtend", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
+    }
+  }
+
+  async function saveSoepen(val) {
+    setSoepen(val);
+    for (const s of val) {
+      await sbUpsert("soepen", { id: s.id, naam: s.naam, beschrijving: s.beschrijving, seizoen: s.seizoen || "", emoji: s.emoji });
     }
   }
 
@@ -1027,7 +1039,7 @@ export default function App() {
   if (!session) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
 
   if (session.role === "admin") {
-    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={setSoepen} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
+    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
   }
 
   const liveKlant = klanten.find(k => k.id === session.klantId);
