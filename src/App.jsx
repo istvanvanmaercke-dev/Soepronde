@@ -138,7 +138,7 @@ function InputField({ label, value, onChange, type = "text", placeholder, option
 /* ══════════════════════════════════════════
    ADMIN PORTAL
 ══════════════════════════════════════════ */
-function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeekMenu, bestellingen, setBestellingen, onLogout }) {
+function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekMenu, setWeekMenu, bestellingen, setBestellingen, onLogout }) {
   const [tab, setTab] = useState("dashboard");
   const [copied, setCopied] = useState(false);
   const [klantModal, setKlantModal] = useState(false);
@@ -1059,7 +1059,7 @@ export default function App() {
   if (!session) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
 
   if (session.role === "admin") {
-    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
+    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} deleteSoep={deleteSoep} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
   }
 
   const liveKlant = klanten.find(k => k.id === session.klantId);
