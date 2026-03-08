@@ -549,16 +549,20 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
         </div>
       </Modal>
 
-      <Modal open={soepModal} onClose={() => setSoepModal(false)} title="Nieuwe soep toevoegen">
+      <Modal open={soepModal} onClose={() => { setSoepModal(false); setEditSoep(null); setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los:5.00, prijs_abonnee:4.50 }); }} title={editSoep ? "Soep bewerken" : "Nieuwe soep toevoegen"}>
         <InputField label="Naam soep" value={newS.naam} onChange={v => setNewS(p=>({...p,naam:v}))} />
         <InputField label="Beschrijving" value={newS.beschrijving} onChange={v => setNewS(p=>({...p,beschrijving:v}))} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <InputField label="Seizoen" value={newS.seizoen} onChange={v => setNewS(p=>({...p,seizoen:v}))} placeholder="Herfst…" />
           <InputField label="Emoji" value={newS.emoji} onChange={v => setNewS(p=>({...p,emoji:v}))} />
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <InputField label="💶 Prijs los (€)" value={newS.prijs_los} onChange={v => setNewS(p=>({...p,prijs_los:parseFloat(v)||0}))} placeholder="5.00" type="number" />
+          <InputField label="⭐ Prijs abonnee (€)" value={newS.prijs_abonnee} onChange={v => setNewS(p=>({...p,prijs_abonnee:parseFloat(v)||0}))} placeholder="4.50" type="number" />
+        </div>
         <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-          <Btn variant="secondary" onClick={() => setSoepModal(false)} style={{ flex: 1 }}>Annuleren</Btn>
-          <Btn disabled={!newS.naam} onClick={saveSoep} style={{ flex: 2 }}>✅ Toevoegen</Btn>
+          <Btn variant="secondary" onClick={() => { setSoepModal(false); setEditSoep(null); setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los:5.00, prijs_abonnee:4.50 }); }} style={{ flex: 1 }}>Annuleren</Btn>
+          <Btn disabled={!newS.naam} onClick={saveSoep} style={{ flex: 2 }}>✅ {editSoep ? "Opslaan" : "Toevoegen"}</Btn>
         </div>
       </Modal>
     </div>
