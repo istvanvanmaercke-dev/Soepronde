@@ -666,7 +666,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                   <div style={{ color: C.brownLight, fontSize: 14, marginTop: 4, lineHeight: 1.5 }}>{s.beschrijving}</div>
                   {s.seizoen && <Tag color="gold" style={{ marginTop: 8 }}>{s.seizoen}</Tag>}
                   <div style={{ marginTop: 10, fontWeight: 600, color: klant.abonnee ? C.sage : C.rust }}>
-                    {klant.abonnee ? "⭐ Abonneeprijs: €4,50" : "💶 Losse prijs: €5,00"}
+                    {klant.abonnee ? `⭐ Abonneeprijs: €${prijs(klant, s).toFixed(2)}` : `💶 Losse prijs: €${prijs(klant, s).toFixed(2)}`}
                   </div>
                 </div>
               </Card>
