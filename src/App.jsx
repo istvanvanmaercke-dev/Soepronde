@@ -315,6 +315,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, weekMenu, setWeek
                   {s.seizoen && <Tag color="gold">{s.seizoen}</Tag>}
                   {(weekMenu[0] === s.id || weekMenu[1] === s.id || weekMenu[2] === s.id) && <Tag color="sage">Deze week</Tag>}
                   <Btn small variant="secondary" onClick={() => { setEditSoep(s); setNewS({...s}); setSoepModal(true); }}>✏️</Btn>
+                  <Btn small variant="secondary" onClick={() => deleteSoep(s)} style={{ color: C.rust }}>🗑️</Btn>
                 </div>
               ))}
             </Card>
@@ -971,6 +972,11 @@ async function sbPatch(table, id, data) {
     method: "PATCH", headers: SB_HDR, body: JSON.stringify(data)
   });
 }
+async function sbDelete(table, id) {
+  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: "DELETE", headers: SB_HDR
+  });
+}
 
 /* ══════════════════════════════════════════
    MAIN APP  — met Supabase opslag
@@ -1006,6 +1012,13 @@ export default function App() {
     for (const k of val) {
       await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: k.levering || "ochtend", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
     }
+  }
+
+  async function deleteSoep(s) {
+    if (!window.confirm(`"${s.naam}" verwijderen?`)) return;
+    const updated = soepen.filter(x => x.id !== s.id);
+    setSoepen(updated);
+    await sbDelete("soepen", s.id);
   }
 
   async function saveSoepen(val) {
