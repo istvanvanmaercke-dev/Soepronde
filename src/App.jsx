@@ -853,12 +853,12 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
     else setFout("E-mail of wachtwoord niet herkend.");
   }
 
-  function registreer() {
+  async function registreer() {
     if (!regNaam || !regEmail || !regPass) { setFout("Vul alle velden in."); return; }
     if (klanten.find(k => k.email === regEmail)) { setFout("Dit e-mailadres is al geregistreerd."); return; }
     const id = Math.max(0, ...klanten.map(k => k.id)) + 1;
-    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "ochtend", abonnee: false, aantalPerWeek: 1, actief: true, wachtend: false };
-    setKlanten([...klanten, nieuw]);
+    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "ochtend", abonnee: false, aantalperweek: 1, actief: true, wachtend: false };
+    await setKlanten([...klanten, nieuw]);
     setRegSuccess(true);
   }
 
