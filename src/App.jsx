@@ -138,12 +138,17 @@ function InputField({ label, value, onChange, type = "text", placeholder, option
 /* ══════════════════════════════════════════
    ADMIN PORTAL
 ══════════════════════════════════════════ */
-function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekMenu, setWeekMenu, bestellingen, setBestellingen, onLogout }) {
+function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekMenu, setWeekMenu, bestellingen, setBestellingen, recepten, setRecepten, onLogout }) {
   const [tab, setTab] = useState("dashboard");
   const [copied, setCopied] = useState(false);
   const [klantModal, setKlantModal] = useState(false);
   const [soepModal, setSoepModal] = useState(false);
   const [editSoep, setEditSoep] = useState(null);
+  const [receptModal, setReceptModal] = useState(false);
+  const [editRecept, setEditRecept] = useState(null);
+  const [newR, setNewR] = useState({ naam:"", emoji:"🍲", beschrijving:"", porties:4, bereidingstijd:30, stappen:[], ingredienten:[] });
+  const [newIngredient, setNewIngredient] = useState({ naam:"", hoeveelheid:"", eenheid:"g", prijs_per_eenheid:0 });
+  const [newStap, setNewStap] = useState("");
   const [editKlant, setEditKlant] = useState(null);
   const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
   const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣" });
@@ -174,6 +179,20 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
     setEditKlant(k); setNewK({ ...k }); setKlantModal(true);
   }
 
+  function saveRecept() {
+    let updated;
+    if (editRecept) {
+      updated = recepten.map(r => r.id === editRecept.id ? { ...r, ...newR } : r);
+    } else {
+      const id = Math.max(0, ...recepten.map(r=>r.id)) + 1;
+      updated = [...recepten, { ...newR, id }];
+    }
+    setRecepten(updated);
+    setReceptModal(false);
+    setEditRecept(null);
+    setNewR({ naam:"", emoji:"🍲", beschrijving:"", porties:4, bereidingstijd:30, stappen:[], ingredienten:[] });
+  }
+
   function saveSoep() {
     const id = Math.max(0, ...soepen.map(s=>s.id)) + 1;
     setSoepen([...soepen, { ...newS, id }]);
@@ -188,6 +207,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
     { key:"bestellingen", icon:"🛍️", label:"Bestellingen" },
     { key:"levering",     icon:"🚚", label:"Levering" },
     { key:"whatsapp",     icon:"💬", label:"WhatsApp" },
+    { key:"recepten",    icon:"📋", label:"Recepten" },
   ];
 
   return (
@@ -522,7 +542,82 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
         )}
       </div>
 
-      {/* ── MODALS ── */}
+
+        {/* ── RECEPTEN ── */}
+        {tab === "recepten" && (
+          <div style={{ animation: "fadeUp .3s ease" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust }}>📋 Technische Fiches</h2>
+              <Btn small onClick={() => { setEditRecept(null); setNewR({ naam:"", emoji:"🍲", beschrijving:"", porties:4, bereidingstijd:30, stappen:[], ingredienten:[] }); setReceptModal(true); }}>+ Recept toevoegen</Btn>
+            </div>
+
+            {recepten.length === 0 && (
+              <Card style={{ textAlign: "center", padding: 40 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+                <div style={{ color: C.brownLight }}>Nog geen recepten. Voeg je eerste recept toe!</div>
+              </Card>
+            )}
+
+            {recepten.map((r, i) => {
+              const totaalKost = r.ingredienten.reduce((s, ing) => s + (parseFloat(ing.prijs_per_eenheid)||0) * (parseFloat(ing.hoeveelheid)||0) / 1000, 0);
+              const kostPerPortie = r.porties > 0 ? totaalKost / r.porties : 0;
+              return (
+                <Card key={r.id} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+                    <span style={{ fontSize: 36 }}>{r.emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: "Playfair Display, serif", fontSize: 20, fontWeight: 700 }}>{r.naam}</div>
+                      <div style={{ color: C.brownLight, fontSize: 13, marginTop: 2 }}>{r.beschrijving}</div>
+                      <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+                        <Tag color="gold">⏱️ {r.bereidingstijd} min</Tag>
+                        <Tag color="brown">👥 {r.porties} porties</Tag>
+                        <Tag color="sage">💶 €{kostPerPortie.toFixed(2)}/portie</Tag>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Btn small variant="secondary" onClick={() => { setEditRecept(r); setNewR({...r}); setReceptModal(true); }}>✏️</Btn>
+                      <Btn small variant="secondary" onClick={() => { if(window.confirm("Verwijderen?")) setRecepten(recepten.filter(x=>x.id!==r.id)); }} style={{ color: C.rust }}>🗑️</Btn>
+                    </div>
+                  </div>
+
+                  {/* Ingrediënten */}
+                  {r.ingredienten.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.brown, marginBottom: 8 }}>🥕 Ingrediënten</div>
+                      <div style={{ background: C.creamDark, borderRadius: 10, overflow: "hidden" }}>
+                        {r.ingredienten.map((ing, ii) => (
+                          <div key={ii} style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", borderBottom: ii < r.ingredienten.length-1 ? `1px solid ${C.cream}` : "none", fontSize: 13 }}>
+                            <span>{ing.naam}</span>
+                            <span style={{ color: C.brownLight }}>{ing.hoeveelheid} {ing.eenheid}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "7px 12px", fontWeight: 700, background: C.cream, fontSize: 13 }}>
+                          <span>Totale kostprijs</span>
+                          <span style={{ color: C.sage }}>€{totaalKost.toFixed(2)} → €{kostPerPortie.toFixed(2)}/portie</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stappen */}
+                  {r.stappen.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.brown, marginBottom: 8 }}>📝 Bereidingswijze</div>
+                      {r.stappen.map((stap, si) => (
+                        <div key={si} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}>
+                          <div style={{ background: C.rust, color: "white", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{si+1}</div>
+                          <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.5 }}>{stap}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+      {/* ── MODALS ── */
       <Modal open={klantModal} onClose={() => setKlantModal(false)} title={editKlant ? "Klant bewerken" : "Nieuwe klant toevoegen"}>
         <InputField label="Volledige naam" value={newK.naam} onChange={v => setNewK(p=>({...p,naam:v}))} />
         <InputField label="E-mailadres" value={newK.email} onChange={v => setNewK(p=>({...p,email:v}))} type="email" />
@@ -566,6 +661,61 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
           <Btn disabled={!newS.naam} onClick={saveSoep} style={{ flex: 2 }}>✅ {editSoep ? "Opslaan" : "Toevoegen"}</Btn>
         </div>
       </Modal>
+
+      <Modal open={receptModal} onClose={() => { setReceptModal(false); setEditRecept(null); }} title={editRecept ? "Recept bewerken" : "Nieuw recept"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12 }}>
+          <InputField label="Naam recept" value={newR.naam} onChange={v => setNewR(p=>({...p,naam:v}))} placeholder="Tomatensoep..." />
+          <InputField label="Emoji" value={newR.emoji} onChange={v => setNewR(p=>({...p,emoji:v}))} />
+        </div>
+        <InputField label="Beschrijving" value={newR.beschrijving} onChange={v => setNewR(p=>({...p,beschrijving:v}))} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <InputField label="Aantal porties" value={newR.porties} onChange={v => setNewR(p=>({...p,porties:+v}))} type="number" />
+          <InputField label="Bereidingstijd (min)" value={newR.bereidingstijd} onChange={v => setNewR(p=>({...p,bereidingstijd:+v}))} type="number" />
+        </div>
+
+        {/* Ingrediënten */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: C.brown, marginBottom: 8 }}>🥕 Ingrediënten</div>
+          {newR.ingredienten.map((ing, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px", background: C.creamDark, borderRadius: 8, marginBottom: 6, fontSize: 13 }}>
+              <span>{ing.naam} — {ing.hoeveelheid} {ing.eenheid}</span>
+              <span style={{ color: C.brownLight, marginLeft: 8 }}>€{((parseFloat(ing.prijs_per_eenheid)||0)*(parseFloat(ing.hoeveelheid)||0)/1000).toFixed(2)}</span>
+              <button onClick={() => setNewR(p=>({...p, ingredienten: p.ingredienten.filter((_,ii)=>ii!==i)}))} style={{ background:"none", border:"none", cursor:"pointer", color:C.rust, marginLeft:8, fontSize:16 }}>×</button>
+            </div>
+          ))}
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 6, marginTop: 8 }}>
+            <input placeholder="Naam" value={newIngredient.naam} onChange={e=>setNewIngredient(p=>({...p,naam:e.target.value}))} style={{ padding:"7px 10px", borderRadius:8, border:`1px solid ${C.creamDark}`, fontFamily:"Lora,serif", fontSize:13 }} />
+            <input placeholder="Hoev." value={newIngredient.hoeveelheid} onChange={e=>setNewIngredient(p=>({...p,hoeveelheid:e.target.value}))} style={{ padding:"7px 10px", borderRadius:8, border:`1px solid ${C.creamDark}`, fontFamily:"Lora,serif", fontSize:13 }} />
+            <select value={newIngredient.eenheid} onChange={e=>setNewIngredient(p=>({...p,eenheid:e.target.value}))} style={{ padding:"7px 6px", borderRadius:8, border:`1px solid ${C.creamDark}`, fontFamily:"Lora,serif", fontSize:13 }}>
+              {["g","kg","ml","l","stuk","el","tl"].map(e=><option key={e}>{e}</option>)}
+            </select>
+            <input placeholder="€/kg" value={newIngredient.prijs_per_eenheid} onChange={e=>setNewIngredient(p=>({...p,prijs_per_eenheid:e.target.value}))} style={{ padding:"7px 10px", borderRadius:8, border:`1px solid ${C.creamDark}`, fontFamily:"Lora,serif", fontSize:13 }} />
+            <Btn small onClick={() => { if(newIngredient.naam) { setNewR(p=>({...p, ingredienten:[...p.ingredienten, newIngredient]})); setNewIngredient({ naam:"", hoeveelheid:"", eenheid:"g", prijs_per_eenheid:0 }); } }}>+</Btn>
+          </div>
+        </div>
+
+        {/* Stappen */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: C.brown, marginBottom: 8 }}>📝 Bereidingsstappen</div>
+          {newR.stappen.map((stap, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+              <div style={{ background: C.rust, color:"white", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, flexShrink:0, marginTop:2 }}>{i+1}</div>
+              <div style={{ flex:1, fontSize:13, color:C.dark, background:C.creamDark, borderRadius:8, padding:"6px 10px" }}>{stap}</div>
+              <button onClick={() => setNewR(p=>({...p, stappen:p.stappen.filter((_,ii)=>ii!==i)}))} style={{ background:"none", border:"none", cursor:"pointer", color:C.rust, fontSize:16 }}>×</button>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input placeholder="Voeg een stap toe..." value={newStap} onChange={e=>setNewStap(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter"&&newStap.trim()){ setNewR(p=>({...p,stappen:[...p.stappen,newStap.trim()]})); setNewStap(""); }}} style={{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${C.creamDark}`, fontFamily:"Lora,serif", fontSize:13 }} />
+            <Btn small onClick={() => { if(newStap.trim()){ setNewR(p=>({...p,stappen:[...p.stappen,newStap.trim()]})); setNewStap(""); }}}>+</Btn>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12 }}>
+          <Btn variant="secondary" onClick={() => { setReceptModal(false); setEditRecept(null); }} style={{ flex:1 }}>Annuleren</Btn>
+          <Btn disabled={!newR.naam} onClick={saveRecept} style={{ flex:2 }}>✅ {editRecept ? "Opslaan" : "Toevoegen"}</Btn>
+        </div>
+      </Modal>
+
     </div>
   );
 }
@@ -985,6 +1135,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [klanten, setKlanten] = useState([]);
   const [soepen,  setSoepen]  = useState([]);
+  const [recepten, setRecepten] = useState([]);
   const [weekMenu, setWeekMenuRaw] = useState([1, 2, null]);
   const [bestellingen, setBestellingen] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -992,11 +1143,12 @@ export default function App() {
   useEffect(() => {
     async function laad() {
       try {
-        const [k, b, w, sp] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu"), sbGet("soepen")]);
+        const [k, b, w, sp, rec] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu"), sbGet("soepen"), sbGet("recepten")]);
         setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1})) : INIT_KLANTEN);
         if (Array.isArray(b)) setBestellingen(b);
         if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
         if (Array.isArray(sp) && sp.length > 0) setSoepen(sp);
+        if (Array.isArray(rec) && rec.length > 0) setRecepten(rec);
         else {
           setSoepen(INIT_SOEPEN);
           for (const s of INIT_SOEPEN) await sbUpsert("soepen", s);
@@ -1025,6 +1177,13 @@ export default function App() {
     setSoepen(val);
     for (const s of val) {
       await sbUpsert("soepen", { id: s.id, naam: s.naam, beschrijving: s.beschrijving, seizoen: s.seizoen || "", emoji: s.emoji, prijs_los: s.prijs_los || 5.00, prijs_abonnee: s.prijs_abonnee || 4.50 });
+    }
+  }
+
+  async function saveRecepten(val) {
+    setRecepten(val);
+    for (const r of val) {
+      await sbUpsert("recepten", { id: r.id, naam: r.naam, emoji: r.emoji || "🍲", beschrijving: r.beschrijving || "", porties: r.porties || 4, bereidingstijd: r.bereidingstijd || 30, stappen: r.stappen || [], ingredienten: r.ingredienten || [] });
     }
   }
 
@@ -1059,7 +1218,7 @@ export default function App() {
   if (!session) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
 
   if (session.role === "admin") {
-    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} deleteSoep={deleteSoep} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} onLogout={handleLogout} />;
+    return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} deleteSoep={deleteSoep} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} recepten={recepten} setRecepten={saveRecepten} onLogout={handleLogout} />;
   }
 
   const liveKlant = klanten.find(k => k.id === session.klantId);
