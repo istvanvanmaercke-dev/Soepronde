@@ -1236,4 +1236,3 @@ export default function App() {
     onLogout={handleLogout}
   />;
 }
-// zo 22 mrt. 2026 14:12:19 CET
