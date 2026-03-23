@@ -645,7 +645,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
         </div>
       </Modal>
 
-      <Modal open={soepModal} onClose={() => { setSoepModal(false); setEditSoep(null); setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los:5.00, prijs_abonnee:4.50 }); }} title={editSoep ? "Soep bewerken" : "Nieuwe soep toevoegen"}>
+      <Modal open={soepModal} onClose={() => setSoepModal(false)} title={editSoep ? "Soep bewerken" : "Nieuwe soep toevoegen"}>
         <InputField label="Naam soep" value={newS.naam} onChange={v => setNewS(p=>({...p,naam:v}))} />
         <InputField label="Beschrijving" value={newS.beschrijving} onChange={v => setNewS(p=>({...p,beschrijving:v}))} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
