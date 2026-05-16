@@ -58,11 +58,33 @@ const INIT_SOEPEN = [
 ];
 
 const INIT_KLANTEN = [
-  { id: 1, naam: "Marie Janssen",   email: "marie@mail.be",  tel: "0471 12 34 56", straat: "Kerkstraat 12",    gemeente: "Gent",      levering: "ochtend",  abonnee: true,  aantalPerWeek: 2, actief: true,  wachtwoord: "marie123" },
-  { id: 2, naam: "Luc Peeters",     email: "luc@mail.be",    tel: "0486 98 76 54", straat: "Molenweg 5",       gemeente: "Gent",      levering: "namiddag", abonnee: false, aantalPerWeek: 1, actief: true,  wachtwoord: "luc123" },
-  { id: 3, naam: "Els De Smedt",    email: "els@mail.be",    tel: "0479 55 44 33", straat: "Bloemenstraat 8",  gemeente: "Merelbeke", levering: "ochtend",  abonnee: true,  aantalPerWeek: 1, actief: true,  wachtwoord: "els123" },
-  { id: 4, naam: "Jan Vermeersch",  email: "jan@mail.be",    tel: "0492 11 22 33", straat: "Gentsesteenweg 44",gemeente: "Melle",     levering: "namiddag", abonnee: false, aantalPerWeek: 2, actief: true,  wachtwoord: "jan123" },
+  { id: 1, naam: "Marie Janssen",   email: "marie@mail.be",  tel: "0471 12 34 56", straat: "Kerkstraat 12",    gemeente: "Gent",      levering: "08:00",  abonnee: true,  aantalPerWeek: 2, actief: true,  wachtwoord: "marie123" },
+  { id: 2, naam: "Luc Peeters",     email: "luc@mail.be",    tel: "0486 98 76 54", straat: "Molenweg 5",       gemeente: "Gent",      levering: "13:00", abonnee: false, aantalPerWeek: 1, actief: true,  wachtwoord: "luc123" },
+  { id: 3, naam: "Els De Smedt",    email: "els@mail.be",    tel: "0479 55 44 33", straat: "Bloemenstraat 8",  gemeente: "Merelbeke", levering: "09:00",  abonnee: true,  aantalPerWeek: 1, actief: true,  wachtwoord: "els123" },
+  { id: 4, naam: "Jan Vermeersch",  email: "jan@mail.be",    tel: "0492 11 22 33", straat: "Gentsesteenweg 44",gemeente: "Melle",     levering: "14:00", abonnee: false, aantalPerWeek: 2, actief: true,  wachtwoord: "jan123" },
 ];
+
+
+/* ─── TIJDSLOTEN ─── */
+function genereerSloten(startUur, startMin, eindUur, eindMin) {
+  const sloten = [];
+  let u = startUur, m = startMin;
+  while (u < eindUur || (u === eindUur && m <= eindMin)) {
+    sloten.push(`${String(u).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
+    m += 30;
+    if (m >= 60) { m = 0; u++; }
+  }
+  return sloten;
+}
+const SLOTEN_OCHTEND  = genereerSloten(8, 0, 12, 0);   // 08:00 – 12:00
+const SLOTEN_NAMIDDAG = genereerSloten(13, 0, 17, 30);  // 13:00 – 17:30
+const ALLE_SLOTEN     = [...SLOTEN_OCHTEND, ...SLOTEN_NAMIDDAG];
+
+function isOchtend(slot) { return slot && slot < "13:00"; }
+function slotLabel(slot) {
+  if (!slot) return "?";
+  return (isOchtend(slot) ? "🌅 " : "🌇 ") + slot;
+}
 
 const WEEK_NR = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
 
@@ -150,13 +172,13 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
   const [newIngredient, setNewIngredient] = useState({ naam:"", hoeveelheid:"", eenheid:"g", prijs_per_eenheid:0 });
   const [newStap, setNewStap] = useState("");
   const [editKlant, setEditKlant] = useState(null);
-  const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
+  const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
   const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣" });
 
   const actief = klanten.filter(k => k.actief);
   const abonnees = actief.filter(k => k.abonnee);
-  const ochtend = actief.filter(k => k.levering === "ochtend");
-  const namiddag = actief.filter(k => k.levering === "namiddag");
+  const ochtend = actief.filter(k => isOchtend(k.levering));
+  const namiddag = actief.filter(k => !isOchtend(k.levering));
   const totaal = actief.reduce((s,k) => s + weekOmzetKlant(k), 0);
 
   const s1 = soepen.find(s => s.id === weekMenu[0]);
@@ -172,7 +194,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
       setKlanten([...klanten, { ...newK, id, actief: true }]);
     }
     setKlantModal(false); setEditKlant(null);
-    setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
+    setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
   }
 
   function openEdit(k) {
@@ -366,7 +388,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   }} />
                   <span style={{ background: C.creamDark, color: C.dark, borderRadius: 10, padding: "7px 14px", fontSize: 13, fontFamily: "Lora, serif", fontWeight: 600, cursor: "pointer" }}>📂 Herstel</span>
                 </label>
-                <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"ochtend", abonnee:false, aantalPerWeek:1, wachtwoord:"" }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
+                <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
               </div>
             </div>
 
@@ -387,7 +409,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   <div style={{ fontSize: 13, color: C.brownLight, marginBottom: 8 }}>{k.tel} • {k.straat}, {k.gemeente}</div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <Tag color={k.abonnee ? "sage" : "brown"}>{k.abonnee ? "⭐ Abonnee €4,50" : "Los €5,00"}</Tag>
-                    <Tag color="rust">{k.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</Tag>
+                    <Tag color="rust">{slotLabel(k.levering)}</Tag>
                     <Tag color="gold">{k.aantalPerWeek}× per week · €{weekOmzetKlant(k).toFixed(2)}</Tag>
                   </div>
                 </div>
@@ -404,10 +426,11 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
         {tab === "levering" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 20 }}>Leveringsplanning — Donderdag Week {WEEK_NR}</h2>
-            {[
-              { label: "🌅 Ochtend", klanten: ochtend, color: C.rust },
-              { label: "🌇 Namiddag", klanten: namiddag, color: C.sage },
-            ].map(groep => (
+            {ALLE_SLOTEN.filter(slot => actief.some(k => k.levering === slot)).map(slot => {
+              const groepKlanten = actief.filter(k => k.levering === slot);
+              const color = isOchtend(slot) ? C.rust : C.sage;
+              const groep = { label: slotLabel(slot), klanten: groepKlanten, color };
+              return (
               <Card key={groep.label} style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <h3 style={{ fontFamily: "Playfair Display, serif", color: groep.color }}>{groep.label} — {groep.klanten.length} stops</h3>
@@ -428,7 +451,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   </div>
                 ))}
               </Card>
-            ))}
+            )})}
             <div style={{ background: `linear-gradient(135deg,${C.rustDark},${C.rust})`, borderRadius: 16, padding: 22, color: "#fff", textAlign: "center" }}>
               <div style={{ fontSize: 14, opacity: .8, marginBottom: 4 }}>Totale weekomzet</div>
               <div style={{ fontFamily: "Playfair Display, serif", fontSize: 42, fontWeight: 700 }}>€{totaal.toFixed(2)}</div>
@@ -465,7 +488,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, flexWrap: "wrap" }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700 }}>{b.klantnaam}</div>
-                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {slotLabel(b.levering)}</div>
                       <div style={{ fontSize: 12, color: C.brownLight }}>{b.datum}</div>
                     </div>
                     <div style={{ fontWeight: 700, color: C.rust }}>€{b.bedrag.toFixed(2)}</div>
@@ -488,7 +511,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: `1px solid ${C.creamDark}`, opacity: 0.6, flexWrap: "wrap" }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700 }}>{b.klantnaam}</div>
-                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {b.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{b.soepen.join(" & ")} · {slotLabel(b.levering)}</div>
                     </div>
                     <div style={{ fontWeight: 700, color: C.sage }}>€{b.bedrag.toFixed(2)}</div>
                   </div>
@@ -612,8 +635,8 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
           <InputField label="Gemeente" value={newK.gemeente} onChange={v => setNewK(p=>({...p,gemeente:v}))} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <InputField label="Levering" value={newK.levering} onChange={v => setNewK(p=>({...p,levering:v}))}
-            options={[{v:"ochtend",l:"🌅 Ochtend"},{v:"namiddag",l:"🌇 Namiddag"}]} />
+          <InputField label="Tijdslot levering" value={newK.levering} onChange={v => setNewK(p=>({...p,levering:v}))}
+            options={ALLE_SLOTEN.map(s => ({v:s, l:slotLabel(s)}))} />
           <InputField label="Soepen/week" value={newK.aantalPerWeek} onChange={v => setNewK(p=>({...p,aantalPerWeek:+v}))} type="number" />
         </div>
         <InputField label="Wachtwoord portaal" value={newK.wachtwoord} onChange={v => setNewK(p=>({...p,wachtwoord:v}))} type="password" />
@@ -741,7 +764,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
   }
 
   function wisselLevering() {
-    const updated = { ...klant, levering: klant.levering === "ochtend" ? "namiddag" : "ochtend" };
+    const huidigIdx = ALLE_SLOTEN.indexOf(klant.levering); const updated = { ...klant, levering: ALLE_SLOTEN[(huidigIdx + 1) % ALLE_SLOTEN.length] };
     setKlant(updated);
     setKlanten(klanten.map(k => k.id === klant.id ? updated : k));
   }
@@ -786,7 +809,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
         {tab === "weekmenu" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 6 }}>Menu van de week</h2>
-            <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Levering donderdag · {klant.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag"}</p>
+            <p style={{ color: C.brownLight, marginBottom: 24, fontSize: 14 }}>Levering donderdag · {slotLabel(klant.levering)}</p>
             {[s1, s2, s3].filter(Boolean).map((s, i) => (
               <Card key={i} style={{ marginBottom: 16, display: "flex", gap: 18, alignItems: "center", padding: "20px 22px" }}>
                 <div style={{ fontSize: 52 }}>{s.emoji}</div>
@@ -820,7 +843,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                 <div style={{ fontSize: 60, marginBottom: 16 }}>✅</div>
                 <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, fontSize: 22, marginBottom: 10 }}>Bestelling ontvangen!</h3>
                 <p style={{ color: C.brownLight, marginBottom: 20, lineHeight: 1.6 }}>
-                  Je soep{aantalBesteld > 1 ? "en worden" : " wordt"} donderdag geleverd <strong>{klant.levering === "ochtend" ? "in de ochtend" : "in de namiddag"}</strong>.<br />
+                  Je soep{aantalBesteld > 1 ? "en worden" : " wordt"} donderdag geleverd <strong>{slotLabel(klant.levering)}</strong>.<br />
                   Betaling via Payconiq of overschrijving bij levering.
                 </p>
                 <div style={{ background: C.cream, borderRadius: 12, padding: "14px 20px", display: "inline-block", marginBottom: 20 }}>
@@ -858,12 +881,13 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
 
                 <Card style={{ marginBottom: 16 }}>
                   <h3 style={{ fontFamily: "Playfair Display, serif", marginBottom: 12, color: C.dark }}>Leveringsmoment</h3>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    {["ochtend", "namiddag"].map(l => (
-                      <div key={l} onClick={() => { const updated = {...klant, levering: l}; setKlant(updated); setKlanten(klanten.map(k=>k.id===klant.id?updated:k)); }}
-                        style={{ flex: 1, padding: 14, borderRadius: 12, border: `2px solid ${klant.levering === l ? C.sage : C.creamDark}`, background: klant.levering === l ? "#E4EFD9" : C.cream, cursor: "pointer", textAlign: "center", transition: "all .2s" }}>
-                        <div style={{ fontSize: 24 }}>{l === "ochtend" ? "🌅" : "🌇"}</div>
-                        <div style={{ fontWeight: 600, fontSize: 14, marginTop: 6, textTransform: "capitalize" }}>{l}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px,1fr))", gap: 8 }}>
+                    {ALLE_SLOTEN.map(slot => (
+                      <div key={slot} onClick={() => { const updated = {...klant, levering: slot}; setKlant(updated); setKlanten(klanten.map(k=>k.id===klant.id?updated:k)); }}
+                        style={{ padding: "10px 6px", borderRadius: 10, border: `2px solid ${klant.levering === slot ? C.sage : C.creamDark}`, background: klant.levering === slot ? "#E4EFD9" : C.cream, cursor: "pointer", textAlign: "center", transition: "all .2s" }}>
+                        <div style={{ fontSize: 16 }}>{isOchtend(slot) ? "🌅" : "🌇"}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginTop: 4 }}>{slot}</div>
+                        <div style={{ fontSize: 10, color: C.brownLight }}>{isOchtend(slot) ? "ochtend" : "namiddag"}</div>
                       </div>
                     ))}
                   </div>
@@ -906,7 +930,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
               {[
                 { label: "Telefoon", val: klant.tel, icon: "📞" },
                 { label: "Adres", val: `${klant.straat}, ${klant.gemeente}`, icon: "📍" },
-                { label: "Levering", val: klant.levering === "ochtend" ? "🌅 Ochtend" : "🌇 Namiddag", icon: "🚚" },
+                { label: "Levering", val: slotLabel(klant.levering), icon: "🚚" },
               ].map(row => (
                 <div key={row.label} style={{ display: "flex", gap: 12, padding: "11px 0", borderBottom: `1px solid ${C.creamDark}` }}>
                   <span style={{ fontSize: 18, width: 24 }}>{row.icon}</span>
