@@ -427,7 +427,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
           <div style={{ animation: "fadeUp .3s ease" }}>
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 20 }}>Leveringsplanning — Donderdag Week {WEEK_NR}</h2>
             {ALLE_SLOTEN.filter(slot => actief.some(k => k.levering === slot)).map(slot => {
-              const groepKlanten = actief.filter(k => k.levering === slot);
+              const groepKlanten = actief.filter(k => k.levering === slot && bestellingen.some(b => b.klantid === k.id && b.week === WEEK_NR));
               const color = isOchtend(slot) ? C.rust : C.sage;
               const groep = { label: slotLabel(slot), klanten: groepKlanten, color };
               return (
