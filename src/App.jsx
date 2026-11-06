@@ -57,12 +57,6 @@ const INIT_SOEPEN = [
   { id: 5, naam: "Pompoensoep", beschrijving: "Romige pompoen met kaneel & nootmuskaat", seizoen: "Herfst", emoji: "🎃", prijs_los: 5.00, prijs_abonnee: 4.50 },
 ];
 
-const INIT_KLANTEN = [
-  { id: 1, naam: "Marie Janssen",   email: "marie@mail.be",  tel: "0471 12 34 56", straat: "Kerkstraat 12",    gemeente: "Gent",      levering: "08:00",  abonnee: true,  aantalPerWeek: 2, actief: true,  wachtwoord: "marie123" },
-  { id: 2, naam: "Luc Peeters",     email: "luc@mail.be",    tel: "0486 98 76 54", straat: "Molenweg 5",       gemeente: "Gent",      levering: "13:00", abonnee: false, aantalPerWeek: 1, actief: true,  wachtwoord: "luc123" },
-  { id: 3, naam: "Els De Smedt",    email: "els@mail.be",    tel: "0479 55 44 33", straat: "Bloemenstraat 8",  gemeente: "Merelbeke", levering: "09:00",  abonnee: true,  aantalPerWeek: 1, actief: true,  wachtwoord: "els123" },
-  { id: 4, naam: "Jan Vermeersch",  email: "jan@mail.be",    tel: "0492 11 22 33", straat: "Gentsesteenweg 44",gemeente: "Melle",     levering: "14:00", abonnee: false, aantalPerWeek: 2, actief: true,  wachtwoord: "jan123" },
-];
 
 
 /* ─── TIJDSLOTEN ─── */
@@ -187,7 +181,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
   const [newIngredient, setNewIngredient] = useState({ naam:"", hoeveelheid:"", eenheid:"g", prijs_per_eenheid:0 });
   const [newStap, setNewStap] = useState("");
   const [editKlant, setEditKlant] = useState(null);
-  const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
+  const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1 });
   const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los: 5.00, prijs_abonnee: 4.50 });
   const [klantFilter, setKlantFilter] = useState("allen");
 
@@ -211,7 +205,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
       setKlanten([...klanten, { ...newK, id, actief: true }]);
     }
     setKlantModal(false); setEditKlant(null);
-    setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
+    setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1 });
   }
 
   function openEdit(k) {
@@ -409,7 +403,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                   }} />
                   <span style={{ background: C.creamDark, color: C.dark, borderRadius: 10, padding: "7px 14px", fontSize: 13, fontFamily: "Lora, serif", fontWeight: 600, cursor: "pointer" }}>📂 Herstel</span>
                 </label>
-                <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
+                <Btn onClick={() => { setEditKlant(null); setNewK({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1 }); setKlantModal(true); }}>+ Nieuwe klant</Btn>
               </div>
             </div>
 
@@ -666,7 +660,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             options={ALLE_SLOTEN.map(s => ({v:s, l:slotLabel(s)}))} />
           <InputField label="Soepen/week" value={newK.aantalPerWeek} onChange={v => setNewK(p=>({...p,aantalPerWeek:+v}))} type="number" />
         </div>
-        <InputField label="Wachtwoord portaal" value={newK.wachtwoord} onChange={v => setNewK(p=>({...p,wachtwoord:v}))} type="password" />
+        <p style={{ fontSize: 12, color: C.brownLight, marginBottom: 14, lineHeight: 1.5 }}>🔒 De klant maakt zelf een account aan met dit e-mailadres en kiest daar zijn eigen wachtwoord. Het account wordt dan automatisch aan deze klant gekoppeld.</p>
         <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, cursor: "pointer", fontSize: 14, color: C.dark }}>
           <input type="checkbox" checked={newK.abonnee} onChange={e => setNewK(p=>({...p,abonnee:e.target.checked}))} style={{ width: 18, height: 18, accentColor: C.sage }} />
           <div>
@@ -1011,35 +1005,40 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
 /* ══════════════════════════════════════════
    LOGIN SCREEN
 ══════════════════════════════════════════ */
-function LoginScreen({ klanten, setKlanten, onLogin }) {
+function LoginScreen({ onLogin }) {
   const [mode, setMode] = useState("keuze"); // keuze | admin | klant | registreren
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [fout, setFout] = useState("");
+  const [bezig, setBezig] = useState(false);
   const [regNaam, setRegNaam] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPass, setRegPass] = useState("");
   const [regTel, setRegTel] = useState("");
-  const [regSuccess, setRegSuccess] = useState(false);
+  const [regResultaat, setRegResultaat] = useState(null); // null | "klaar" | "bevestigen"
 
-  function loginAdmin() {
-    if (pass === "admin123") onLogin("admin", null);
-    else setFout("Fout wachtwoord. (Hint: admin123)");
-  }
-
-  function loginKlant() {
-    const k = klanten.find(k => k.email === email && k.wachtwoord === pass && k.actief && !k.wachtend);
-    if (k) onLogin("klant", k);
-    else setFout("E-mail of wachtwoord niet herkend.");
+  async function inloggen(gewensteRol) {
+    if (!email || !pass) { setFout("Vul je e-mailadres en wachtwoord in."); return; }
+    setBezig(true); setFout("");
+    try { await onLogin(email.trim(), pass, gewensteRol); }
+    catch (e) { setFout(e.message); }
+    setBezig(false);
   }
 
   async function registreer() {
     if (!regNaam || !regEmail || !regPass) { setFout("Vul alle velden in."); return; }
-    if (klanten.find(k => k.email === regEmail)) { setFout("Dit e-mailadres is al geregistreerd."); return; }
-    const id = Math.max(0, ...klanten.map(k => k.id)) + 1;
-    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "08:00", abonnee: false, aantalPerWeek: 1, actief: true, wachtend: false };
-    await setKlanten([...klanten, nieuw]);
-    setRegSuccess(true);
+    if (regPass.length < 8) { setFout("Kies een wachtwoord van minstens 8 tekens."); return; }
+    setBezig(true); setFout("");
+    try {
+      const d = await registreerAccount(regEmail.trim(), regPass, { naam: regNaam.trim(), tel: regTel.trim() });
+      if (d.access_token) await uitloggen(); // eerst gewoon laten inloggen
+      setRegResultaat(d.access_token ? "klaar" : "bevestigen");
+    } catch (e) { setFout(e.message); }
+    setBezig(false);
+  }
+
+  function terug(naar) {
+    setMode(naar); setFout(""); setPass(""); setRegResultaat(null);
   }
 
   return (
@@ -1060,14 +1059,14 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
               <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 8, fontSize: 22 }}>Welkom!</h2>
               <p style={{ color: C.brownLight, fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>Kies hieronder hoe je wil inloggen.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <button onClick={() => setMode("admin")} style={{ background: `linear-gradient(135deg,${C.rustDark},${C.rust})`, color: "#fff", border: "none", borderRadius: 12, padding: "16px 20px", cursor: "pointer", fontFamily: "Lora, serif", fontSize: 15, fontWeight: 600, textAlign: "left", display: "flex", alignItems: "center", gap: 14, boxShadow: `0 4px 18px rgba(184,74,30,.3)` }}>
+                <button onClick={() => terug("admin")} style={{ background: `linear-gradient(135deg,${C.rustDark},${C.rust})`, color: "#fff", border: "none", borderRadius: 12, padding: "16px 20px", cursor: "pointer", fontFamily: "Lora, serif", fontSize: 15, fontWeight: 600, textAlign: "left", display: "flex", alignItems: "center", gap: 14, boxShadow: `0 4px 18px rgba(184,74,30,.3)` }}>
                   <span style={{ fontSize: 28 }}>🔑</span>
                   <div>
                     <div>Beheerder</div>
                     <div style={{ fontSize: 12, opacity: .8 }}>Klanten, weekmenu & leveringen</div>
                   </div>
                 </button>
-                <button onClick={() => setMode("klant")} style={{ background: `linear-gradient(135deg,${C.sage},${C.sageLt})`, color: "#fff", border: "none", borderRadius: 12, padding: "16px 20px", cursor: "pointer", fontFamily: "Lora, serif", fontSize: 15, fontWeight: 600, textAlign: "left", display: "flex", alignItems: "center", gap: 14, boxShadow: `0 4px 18px rgba(90,122,74,.3)` }}>
+                <button onClick={() => terug("klant")} style={{ background: `linear-gradient(135deg,${C.sage},${C.sageLt})`, color: "#fff", border: "none", borderRadius: 12, padding: "16px 20px", cursor: "pointer", fontFamily: "Lora, serif", fontSize: 15, fontWeight: 600, textAlign: "left", display: "flex", alignItems: "center", gap: 14, boxShadow: `0 4px 18px rgba(90,122,74,.3)` }}>
                   <span style={{ fontSize: 28 }}>👤</span>
                   <div>
                     <div>Klant</div>
@@ -1078,48 +1077,48 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
             </>
           )}
 
-          {mode === "admin" && (
+          {(mode === "admin" || mode === "klant") && (
             <>
-              <button onClick={() => { setMode("keuze"); setFout(""); setPass(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
-              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>🔑 Beheerder inloggen</h2>
-              <InputField label="Wachtwoord" value={pass} onChange={setPass} type="password" placeholder="admin123" />
-              {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-              <Btn onClick={loginAdmin} style={{ width: "100%" }}>Inloggen</Btn>
-            </>
-          )}
-
-          {mode === "klant" && (
-            <>
-              <button onClick={() => { setMode("keuze"); setFout(""); setEmail(""); setPass(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
-              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>👤 Klant inloggen</h2>
+              <button onClick={() => terug("keuze")} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
+              <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>{mode === "admin" ? "🔑 Beheerder inloggen" : "👤 Klant inloggen"}</h2>
               <InputField label="E-mailadres" value={email} onChange={setEmail} type="email" placeholder="jouw@email.be" />
-              <InputField label="Wachtwoord" value={pass} onChange={setPass} type="password" placeholder="••••••" />
+              <InputField label="Wachtwoord" value={pass} onChange={setPass} type="password" placeholder="••••••••" />
               {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-              <Btn variant="green" onClick={loginKlant} style={{ width: "100%", marginBottom: 12 }}>Inloggen</Btn>
-              <div style={{ textAlign: "center", fontSize: 13, color: C.brownLight, marginBottom: 4 }}>Nog geen account?</div>
-              <Btn variant="ghost" onClick={() => { setMode("registreren"); setFout(""); }} style={{ width: "100%" }}>✍️ Nieuw account aanmaken</Btn>
+              <Btn variant={mode === "admin" ? "primary" : "green"} disabled={bezig} onClick={() => inloggen(mode)} style={{ width: "100%", marginBottom: 12 }}>{bezig ? "Even geduld…" : "Inloggen"}</Btn>
+              {mode === "klant" && (
+                <>
+                  <div style={{ textAlign: "center", fontSize: 13, color: C.brownLight, marginBottom: 4 }}>Nog geen account?</div>
+                  <Btn variant="ghost" onClick={() => terug("registreren")} style={{ width: "100%" }}>✍️ Nieuw account aanmaken</Btn>
+                </>
+              )}
             </>
           )}
 
           {mode === "registreren" && (
             <>
-              <button onClick={() => { setMode("klant"); setFout(""); setRegSuccess(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
+              <button onClick={() => terug("klant")} style={{ background: "none", border: "none", cursor: "pointer", color: C.brownLight, fontSize: 13, marginBottom: 16, fontFamily: "Lora, serif" }}>← Terug</button>
               <h2 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 20, fontSize: 20 }}>✍️ Account aanmaken</h2>
-              {regSuccess ? (
+              {regResultaat ? (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-                  <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 10 }}>Account aangemaakt!</h3>
-                  <p style={{ fontSize: 14, color: C.brownLight, lineHeight: 1.6 }}>Je account is aangemaakt! Je kan nu meteen inloggen met je e-mail en wachtwoord.</p>
-                  <Btn variant="green" onClick={() => { setMode("klant"); setRegSuccess(false); setRegNaam(""); setRegEmail(""); setRegPass(""); setRegTel(""); }} style={{ marginTop: 20 }}>Naar inloggen</Btn>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>{regResultaat === "bevestigen" ? "📧" : "🎉"}</div>
+                  <h3 style={{ fontFamily: "Playfair Display, serif", color: C.sage, marginBottom: 10 }}>
+                    {regResultaat === "bevestigen" ? "Bijna klaar!" : "Account aangemaakt!"}
+                  </h3>
+                  <p style={{ fontSize: 14, color: C.brownLight, lineHeight: 1.6 }}>
+                    {regResultaat === "bevestigen"
+                      ? "We stuurden je een e-mail. Klik op de link in die mail om je e-mailadres te bevestigen, en log daarna in."
+                      : "Je kan nu inloggen met je e-mailadres en wachtwoord."}
+                  </p>
+                  <Btn variant="green" onClick={() => { setEmail(regEmail); setRegNaam(""); setRegEmail(""); setRegPass(""); setRegTel(""); terug("klant"); }} style={{ marginTop: 20 }}>Naar inloggen</Btn>
                 </div>
               ) : (
                 <>
                   <InputField label="Volledige naam" value={regNaam} onChange={setRegNaam} placeholder="Jan Janssen" />
                   <InputField label="E-mailadres" value={regEmail} onChange={setRegEmail} type="email" placeholder="jouw@email.be" />
                   <InputField label="Telefoonnummer" value={regTel} onChange={setRegTel} placeholder="0471 00 00 00" />
-                  <InputField label="Wachtwoord" value={regPass} onChange={setRegPass} type="password" placeholder="Kies een wachtwoord" />
+                  <InputField label="Wachtwoord (min. 8 tekens)" value={regPass} onChange={setRegPass} type="password" placeholder="Kies een wachtwoord" />
                   {fout && <div style={{ color: C.rust, fontSize: 13, marginBottom: 12 }}>⚠️ {fout}</div>}
-                  <Btn variant="green" onClick={registreer} style={{ width: "100%" }}>✍️ Aanvraag indienen</Btn>
+                  <Btn variant="green" disabled={bezig} onClick={registreer} style={{ width: "100%" }}>{bezig ? "Even geduld…" : "✍️ Account aanmaken"}</Btn>
                 </>
               )}
             </>
@@ -1132,37 +1131,143 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
 
 /* ══════════════════════════════════════════
    SUPABASE CONFIG
+   De sleutel hieronder is de publieke "anon"-sleutel: die mag in de app staan.
+   Wie wat mag zien, wordt geregeld in de database (zie supabase-beveiliging.sql).
 ══════════════════════════════════════════ */
 const SB_URL = "https://creatittinunrfbjgsih.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyZWF0aXR0aW51bnJmYmpnc2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1Njc0MTcsImV4cCI6MjA4ODE0MzQxN30.BMX3GHKAoKUGkVsHuwZlQl3Uw3GF7lPfcwhELoCLQ_E";
-const SB_HDR = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" };
 
+/* ─── LOGIN (Supabase Auth) ─── */
+const SESSIE_KEY = "soepronde-sessie";
+let sessie = null;
+try { sessie = JSON.parse(localStorage.getItem(SESSIE_KEY)); } catch { sessie = null; }
+let vernieuwBezig = null;
+
+function bewaarSessie(s) {
+  sessie = s;
+  try { s ? localStorage.setItem(SESSIE_KEY, JSON.stringify(s)) : localStorage.removeItem(SESSIE_KEY); } catch { /* geen opslag */ }
+}
+
+function vertaalFout(d) {
+  const m = String(d?.error_description || d?.msg || d?.message || d?.error || "").toLowerCase();
+  if (m.includes("invalid login")) return "E-mail of wachtwoord niet herkend.";
+  if (m.includes("not confirmed")) return "Bevestig eerst je e-mailadres via de link in je mailbox.";
+  if (m.includes("already registered") || m.includes("already been registered")) return "Er bestaat al een account met dit e-mailadres.";
+  if (m.includes("password")) return "Dit wachtwoord is niet sterk genoeg. Kies een langer wachtwoord.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Te veel pogingen. Probeer het over een paar minuten opnieuw.";
+  if (m.includes("email")) return "Dit e-mailadres is niet geldig.";
+  return "Er ging iets mis. Probeer het opnieuw.";
+}
+
+async function authCall(pad, body, token) {
+  const r = await fetch(`${SB_URL}/auth/v1/${pad}`, {
+    method: "POST",
+    headers: { apikey: SB_KEY, "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify(body || {}),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(vertaalFout(d));
+  return d;
+}
+
+function maakSessie(d) {
+  return {
+    access_token: d.access_token,
+    refresh_token: d.refresh_token,
+    expires_at: d.expires_at || Math.floor(Date.now() / 1000) + (d.expires_in || 3600),
+    user: d.user,
+  };
+}
+
+async function inloggenMetWachtwoord(email, wachtwoord) {
+  const d = await authCall("token?grant_type=password", { email, password: wachtwoord });
+  bewaarSessie(maakSessie(d));
+}
+
+async function registreerAccount(email, wachtwoord, gegevens) {
+  const d = await authCall("signup", { email, password: wachtwoord, data: gegevens });
+  if (d.access_token) bewaarSessie(maakSessie(d));
+  return d;
+}
+
+async function uitloggen() {
+  const t = sessie?.access_token;
+  bewaarSessie(null);
+  if (t) authCall("logout", {}, t).catch(() => {});
+}
+
+async function geldigToken() {
+  if (!sessie) return null;
+  if (sessie.expires_at - 60 > Date.now() / 1000) return sessie.access_token;
+  if (!vernieuwBezig) {
+    vernieuwBezig = authCall("token?grant_type=refresh_token", { refresh_token: sessie.refresh_token })
+      .then(d => bewaarSessie(maakSessie(d)))
+      .catch(() => bewaarSessie(null))
+      .finally(() => { vernieuwBezig = null; });
+  }
+  await vernieuwBezig;
+  return sessie?.access_token || null;
+}
+
+async function sbHeaders(extra = {}) {
+  const t = await geldigToken();
+  return { apikey: SB_KEY, Authorization: `Bearer ${t || SB_KEY}`, "Content-Type": "application/json", ...extra };
+}
+
+/* ─── DATABASE ─── */
+async function sbCheck(r, wat) {
+  if (!r.ok) {
+    console.error(wat, r.status, await r.text().catch(() => ""));
+    alert("⚠️ Opslaan is niet gelukt. Ben je nog ingelogd? Probeer opnieuw in te loggen.");
+  }
+}
+async function sbInsert(table, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: "POST", headers: await sbHeaders(), body: JSON.stringify(data),
+  });
+  await sbCheck(r, `toevoegen ${table}`);
+}
 async function sbGet(table) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*`, { headers: SB_HDR });
-  return r.json();
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*`, { headers: await sbHeaders() });
+  return r.ok ? r.json() : [];
 }
 async function sbUpsert(table, data) {
-  await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: "POST", headers: { ...SB_HDR, Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify(data)
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: "POST", headers: await sbHeaders({ Prefer: "resolution=merge-duplicates" }),
+    body: JSON.stringify(data),
   });
+  await sbCheck(r, `opslaan ${table}`);
 }
 async function sbPatch(table, id, data) {
-  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: "PATCH", headers: SB_HDR, body: JSON.stringify(data)
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: "PATCH", headers: await sbHeaders(), body: JSON.stringify(data),
   });
+  await sbCheck(r, `wijzigen ${table}`);
 }
 async function sbDelete(table, id) {
-  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: "DELETE", headers: SB_HDR
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: "DELETE", headers: await sbHeaders(),
   });
+  await sbCheck(r, `verwijderen ${table}`);
+}
+async function sbIsAdmin() {
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/is_admin`, { method: "POST", headers: await sbHeaders(), body: "{}" });
+  return r.ok ? (await r.json()) === true : false;
+}
+
+function klantRij(k) {
+  return {
+    id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "",
+    levering: ALLE_SLOTEN.includes(k.levering) ? k.levering : "08:00",
+    abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false,
+  };
 }
 
 /* ══════════════════════════════════════════
    MAIN APP  — met Supabase opslag
 ══════════════════════════════════════════ */
 export default function App() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState(null); // null | { role: "admin" } | { role: "klant", klantId }
   const [klanten, setKlanten] = useState([]);
   const [soepen,  setSoepen]  = useState([]);
   const [recepten, setReceptenRaw] = useState(() => {
@@ -1176,28 +1281,65 @@ export default function App() {
   const [bestellingen, setBestellingen] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    async function laad() {
-      try {
-        const [k, b, w, sp] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu"), sbGet("soepen")]);
-        setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1, levering: ALLE_SLOTEN.includes(x.levering) ? x.levering : (x.levering === "namiddag" ? "13:00" : "08:00")})) : INIT_KLANTEN);
-        if (Array.isArray(b)) setBestellingen(b);
-        if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
-        if (Array.isArray(sp) && sp.length > 0) setSoepen(sp);
-        else {
-          setSoepen(INIT_SOEPEN);
-          for (const s of INIT_SOEPEN) await sbUpsert("soepen", s);
-        }
-      } catch(e) { console.error(e); setKlanten(INIT_KLANTEN); }
-      setLoaded(true);
+  // Laadt alles wat de ingelogde persoon mag zien en geeft zijn rol terug.
+  async function laadData() {
+    const ingelogd = !!(await geldigToken());
+    const admin = ingelogd && await sbIsAdmin();
+    const [k, b, w, sp] = await Promise.all([
+      ingelogd ? sbGet("klanten") : [],
+      ingelogd ? sbGet("bestellingen") : [],
+      sbGet("weekmenu"),
+      sbGet("soepen"),
+    ]);
+    const lijst = Array.isArray(k) ? k.map(x => ({
+      ...x,
+      aantalPerWeek: x.aantalperweek || 1,
+      levering: ALLE_SLOTEN.includes(x.levering) ? x.levering : (x.levering === "namiddag" ? "13:00" : "08:00"),
+    })) : [];
+    setKlanten(lijst);
+    setBestellingen(Array.isArray(b) ? b : []);
+    if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
+    if (Array.isArray(sp) && sp.length > 0) setSoepen(sp);
+    else {
+      setSoepen(INIT_SOEPEN);
+      if (admin) for (const s of INIT_SOEPEN) await sbUpsert("soepen", s);
     }
-    laad();
+
+    if (!ingelogd) { setSession(null); return null; }
+    if (admin) { setSession({ role: "admin" }); return "admin"; }
+    const eigen = lijst.find(x => x.user_id === sessie?.user?.id);
+    if (eigen && eigen.actief !== false) { setSession({ role: "klant", klantId: eigen.id }); return "klant"; }
+    setSession(null);
+    return eigen ? "inactief" : "onbekend";
+  }
+
+  useEffect(() => {
+    laadData().catch(e => console.error(e)).finally(() => setLoaded(true));
   }, []);
 
+  async function handleLogin(email, wachtwoord, gewensteRol) {
+    await inloggenMetWachtwoord(email, wachtwoord);
+    const rol = await laadData();
+    if (rol === gewensteRol) return;
+    await handleLogout();
+    if (gewensteRol === "admin") throw new Error("Dit account heeft geen beheerdersrechten.");
+    if (rol === "admin") throw new Error("Dit is een beheerdersaccount. Kies 'Beheerder' om in te loggen.");
+    if (rol === "inactief") throw new Error("Dit account is niet meer actief. Neem contact met ons op.");
+    throw new Error("Er is geen klantprofiel gevonden voor dit account. Neem contact met ons op.");
+  }
+
+  async function handleLogout() {
+    await uitloggen();
+    setSession(null); setKlanten([]); setBestellingen([]);
+  }
+
   async function saveKlanten(val) {
+    const oud = klanten;
     setKlanten(val);
     for (const k of val) {
-      await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: ALLE_SLOTEN.includes(k.levering) ? k.levering : "08:00", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
+      const vorige = oud.find(x => x.id === k.id);
+      if (!vorige) await sbUpsert("klanten", klantRij(k));
+      else if (JSON.stringify(klantRij(vorige)) !== JSON.stringify(klantRij(k))) await sbPatch("klanten", k.id, klantRij(k));
     }
   }
 
@@ -1222,7 +1364,7 @@ export default function App() {
 
   async function saveBestellingen(val) {
     const nieuw = val.find(b => !bestellingen.find(x => x.id === b.id));
-    if (nieuw) await sbUpsert("bestellingen", nieuw);
+    if (nieuw) await sbInsert("bestellingen", nieuw);
     else {
       const gewijzigd = val.filter(b => { const o = bestellingen.find(x => x.id === b.id); return o && o.afgehandeld !== b.afgehandeld; });
       for (const g of gewijzigd) await sbPatch("bestellingen", g.id, { afgehandeld: g.afgehandeld });
@@ -1238,19 +1380,14 @@ export default function App() {
     </div>
   );
 
-  function handleLogin(role, klant) {
-    setSession(role === "admin" ? { role } : { role: "klant", klantId: klant.id });
-  }
-  function handleLogout() { setSession(null); }
-
-  if (!session) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
+  if (!session) return <LoginScreen onLogin={handleLogin} />;
 
   if (session.role === "admin") {
     return <AdminPortal klanten={klanten} setKlanten={saveKlanten} soepen={soepen} setSoepen={saveSoepen} deleteSoep={deleteSoep} weekMenu={weekMenu} setWeekMenu={saveWeekMenu} bestellingen={bestellingen} setBestellingen={saveBestellingen} recepten={recepten} setRecepten={setRecepten} onLogout={handleLogout} />;
   }
 
   const liveKlant = klanten.find(k => k.id === session.klantId);
-  if (!liveKlant) return <LoginScreen klanten={klanten} setKlanten={saveKlanten} onLogin={handleLogin} />;
+  if (!liveKlant) return <LoginScreen onLogin={handleLogin} />;
 
   return <KlantPortal
     klant={liveKlant}
