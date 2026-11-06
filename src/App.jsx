@@ -90,10 +90,25 @@ const WEEK_NR = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)
 
 /* ─── HELPERS ─── */
 const prijs = (k, soep) => soep ? (k.abonnee ? (soep.prijs_abonnee || 4.50) : (soep.prijs_los || 5.00)) : (k.abonnee ? 4.50 : 5.00);
-const weekOmzetKlant = (k) => k.aantalPerWeek * prijs(k);
+const weekOmzetKlant = (k) => (k.aantalPerWeek || 1) * prijs(k);
+// prijs is per kg / per liter voor g, kg, ml, l — en per stuk voor stuk, el, tl
+const ingredientKost = (ing) => {
+  const p = parseFloat(String(ing.prijs_per_eenheid).replace(",", ".")) || 0;
+  const h = parseFloat(String(ing.hoeveelheid).replace(",", ".")) || 0;
+  return ["g", "ml"].includes(ing.eenheid) ? p * h / 1000 : p * h;
+};
 
 function formatWA(s1, s2, week) {
   return `🍲 *Soepen van de week – week ${week}*\n\nLieve klant,\n\nDeze week serveren wij:\n\n🥣 *${s1?.naam || "Soep 1"}*\n${s1?.beschrijving || ""}\n\n🥣 *${s2?.naam || "Soep 2"}*\n${s2?.beschrijving || ""}\n\n📦 Levering op *donderdag* (ochtend of namiddag)\n💶 Abonnee: €4,50 | Los: €5,00 per soep\n💳 Betaling via *Payconiq* of overschrijving\n\nBestellen? Antwoord op dit bericht! 🌿\nSmakelijk!`;
+}
+
+// wa.me verwacht 32471123456 (zonder + of beginnende 0)
+function waNummer(tel) {
+  let n = String(tel || "").replace(/[^\d+]/g, "");
+  if (n.startsWith("+")) n = n.slice(1);
+  else if (n.startsWith("00")) n = n.slice(2);
+  else if (n.startsWith("0")) n = "32" + n.slice(1);
+  return n;
 }
 
 /* ─── SMALL COMPONENTS ─── */
@@ -173,7 +188,8 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
   const [newStap, setNewStap] = useState("");
   const [editKlant, setEditKlant] = useState(null);
   const [newK, setNewK] = useState({ naam:"", email:"", tel:"", straat:"", gemeente:"", levering:"08:00", abonnee:false, aantalPerWeek:1, wachtwoord:"" });
-  const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣" });
+  const [newS, setNewS] = useState({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los: 5.00, prijs_abonnee: 4.50 });
+  const [klantFilter, setKlantFilter] = useState("allen");
 
   const actief = klanten.filter(k => k.actief);
   const abonnees = actief.filter(k => k.abonnee);
@@ -185,6 +201,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
   const s2 = soepen.find(s => s.id === weekMenu[1]);
   const s3 = soepen.find(s => s.id === weekMenu[2]);
   const waText = formatWA(s1, s2, WEEK_NR);
+  const weekBestellingen = bestellingen.filter(b => b.week === WEEK_NR);
 
   function saveKlant() {
     if (editKlant) {
@@ -211,9 +228,13 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
   }
 
   function saveSoep() {
-    const id = Math.max(0, ...soepen.map(s=>s.id)) + 1;
-    setSoepen([...soepen, { ...newS, id }]);
-    setSoepModal(false);
+    if (editSoep) {
+      setSoepen(soepen.map(s => s.id === editSoep.id ? { ...s, ...newS, id: editSoep.id } : s));
+    } else {
+      const id = Math.max(0, ...soepen.map(s=>s.id)) + 1;
+      setSoepen([...soepen, { ...newS, id }]);
+    }
+    setSoepModal(false); setEditSoep(null);
     setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los: 5.00, prijs_abonnee: 4.50 });
   }
 
@@ -281,7 +302,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px,1fr))", gap: 16 }}>
               <Card>
                 <h3 style={{ fontFamily: "Playfair Display, serif", color: C.dark, marginBottom: 14, fontSize: 17 }}>🍲 Soepen week {WEEK_NR}</h3>
-                {s1 && s2 ? [s1, s2].map((s, i) => (
+                {s1 && s2 ? [s1, s2, s3].filter(Boolean).map((s, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10, padding: "10px 12px", background: C.cream, borderRadius: 10 }}>
                     <span style={{ fontSize: 24 }}>{s.emoji}</span>
                     <div>
@@ -315,7 +336,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
           <div style={{ animation: "fadeUp .3s ease" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust }}>Weekmenu — Week {WEEK_NR}</h2>
-              <Btn small onClick={() => setSoepModal(true)}>+ Soep toevoegen</Btn>
+              <Btn small onClick={() => { setEditSoep(null); setNewS({ naam:"", beschrijving:"", seizoen:"", emoji:"🥣", prijs_los:5.00, prijs_abonnee:4.50 }); setSoepModal(true); }}>+ Soep toevoegen</Btn>
             </div>
 
             <Card style={{ marginBottom: 20 }}>
@@ -395,11 +416,11 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             {/* Filter tabs */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               {["allen", "abonnees", "los"].map(f => (
-                <Btn key={f} small variant="secondary" style={{ textTransform: "capitalize" }}>{f}</Btn>
+                <Btn key={f} small variant={klantFilter === f ? "primary" : "secondary"} onClick={() => setKlantFilter(f)} style={{ textTransform: "capitalize" }}>{f}</Btn>
               ))}
             </div>
 
-            {actief.map(k => (
+            {actief.filter(k => klantFilter === "allen" || (klantFilter === "abonnees" ? k.abonnee : !k.abonnee)).map(k => (
               <Card key={k.id} style={{ marginBottom: 12, display: "flex", alignItems: "flex-start", gap: 16, padding: "16px 20px", flexWrap: "wrap" }}>
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: k.abonnee ? `linear-gradient(135deg,${C.sage},${C.sageLt})` : `linear-gradient(135deg,${C.rustLight},${C.rust})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                   {k.abonnee ? "⭐" : "🛒"}
@@ -426,35 +447,41 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
         {tab === "levering" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
             <h2 style={{ fontFamily: "Playfair Display, serif", color: C.rust, marginBottom: 20 }}>Leveringsplanning — Donderdag Week {WEEK_NR}</h2>
-            {ALLE_SLOTEN.filter(slot => actief.some(k => k.levering === slot)).map(slot => {
-              const groepKlanten = actief.filter(k => k.levering === slot && bestellingen.some(b => b.klantid === k.id && b.week === WEEK_NR));
+            {weekBestellingen.length === 0 && (
+              <Card style={{ textAlign: "center", padding: 40, marginBottom: 20 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
+                <p style={{ color: C.brownLight }}>Nog geen bestellingen om te leveren deze week.</p>
+              </Card>
+            )}
+            {ALLE_SLOTEN.filter(slot => weekBestellingen.some(b => b.levering === slot)).map(slot => {
+              const stops = weekBestellingen.filter(b => b.levering === slot);
               const color = isOchtend(slot) ? C.rust : C.sage;
-              const groep = { label: slotLabel(slot), klanten: groepKlanten, color };
               return (
-              <Card key={groep.label} style={{ marginBottom: 20 }}>
+              <Card key={slot} style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h3 style={{ fontFamily: "Playfair Display, serif", color: groep.color }}>{groep.label} — {groep.klanten.length} stops</h3>
-                  <Tag color={groep.color === C.rust ? "rust" : "sage"}>€{groep.klanten.reduce((s,k)=>s+weekOmzetKlant(k),0).toFixed(2)}</Tag>
+                  <h3 style={{ fontFamily: "Playfair Display, serif", color }}>{slotLabel(slot)} — {stops.length} stop{stops.length !== 1 ? "s" : ""}</h3>
+                  <Tag color={isOchtend(slot) ? "rust" : "sage"}>€{stops.reduce((s,b)=>s+(b.bedrag||0),0).toFixed(2)}</Tag>
                 </div>
-                {groep.klanten.length === 0 && <p style={{ color: C.brownLight, fontSize: 14 }}>Geen leveringen.</p>}
-                {groep.klanten.map((k, i) => (
-                  <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: i < groep.klanten.length-1 ? `1px dashed ${C.creamDark}` : "none" }}>
-                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: groep.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{i+1}</div>
+                {stops.map((b, i) => {
+                  const k = klanten.find(x => x.id === b.klantid) || {};
+                  return (
+                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: i < stops.length-1 ? `1px dashed ${C.creamDark}` : "none", opacity: b.afgehandeld ? .55 : 1 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{i+1}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{k.naam}</div>
-                      <div style={{ fontSize: 13, color: C.brownLight }}>{k.straat}, {k.gemeente}</div>
+                      <div style={{ fontWeight: 600 }}>{b.klantnaam}{b.afgehandeld ? " ✅" : ""}</div>
+                      <div style={{ fontSize: 13, color: C.brownLight }}>{k.straat ? `${k.straat}, ${k.gemeente}` : "Geen adres ingevuld"}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontWeight: 700, color: groep.color }}>€{weekOmzetKlant(k).toFixed(2)}</div>
-                      <div style={{ fontSize: 12, color: C.brownLight }}>{k.aantalPerWeek}× soep</div>
+                      <div style={{ fontWeight: 700, color }}>€{(b.bedrag||0).toFixed(2)}</div>
+                      <div style={{ fontSize: 12, color: C.brownLight }}>{(b.soepen||[]).length}× soep</div>
                     </div>
                   </div>
-                ))}
+                )})}
               </Card>
             )})}
             <div style={{ background: `linear-gradient(135deg,${C.rustDark},${C.rust})`, borderRadius: 16, padding: 22, color: "#fff", textAlign: "center" }}>
-              <div style={{ fontSize: 14, opacity: .8, marginBottom: 4 }}>Totale weekomzet</div>
-              <div style={{ fontFamily: "Playfair Display, serif", fontSize: 42, fontWeight: 700 }}>€{totaal.toFixed(2)}</div>
+              <div style={{ fontSize: 14, opacity: .8, marginBottom: 4 }}>Totaal bestellingen deze week</div>
+              <div style={{ fontFamily: "Playfair Display, serif", fontSize: 42, fontWeight: 700 }}>€{weekBestellingen.reduce((s,b)=>s+(b.bedrag||0),0).toFixed(2)}</div>
               <div style={{ fontSize: 13, opacity: .7, marginTop: 4 }}>Payconiq of overschrijving bij levering</div>
             </div>
           </div>
@@ -549,7 +576,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
                     <span style={{ fontWeight: 600 }}>{k.naam}</span>
                     <span style={{ color: C.brownLight, fontSize: 13 }}> · {k.tel}</span>
                   </div>
-                  <a href={`https://wa.me/${k.tel.replace(/\s/g,"")}?text=${encodeURIComponent(waText)}`} target="_blank" rel="noopener noreferrer"
+                  <a href={`https://wa.me/${waNummer(k.tel)}?text=${encodeURIComponent(waText)}`} target="_blank" rel="noopener noreferrer"
                     style={{ background: "#25D366", color: "#fff", textDecoration: "none", borderRadius: 8, padding: "6px 14px", fontSize: 13, fontFamily: "Lora, serif", fontWeight: 600 }}>
                     💬 Stuur
                   </a>
@@ -558,7 +585,6 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             </Card>
           </div>
         )}
-      </div>
 
         {tab === "recepten" && (
           <div style={{ animation: "fadeUp .3s ease" }}>
@@ -573,7 +599,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
               </Card>
             )}
             {recepten.map((r) => {
-              const totaal = r.ingredienten.reduce((s, ing) => s + (parseFloat(ing.prijs_per_eenheid)||0) * (parseFloat(ing.hoeveelheid)||0) / 1000, 0);
+              const totaal = r.ingredienten.reduce((s, ing) => s + ingredientKost(ing), 0);
               const perPortie = r.porties > 0 ? totaal / r.porties : 0;
               return (
                 <Card key={r.id} style={{ marginBottom: 16 }}>
@@ -624,6 +650,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             })}
           </div>
         )}
+      </div>
 
       {/* ── MODALS ── */}
       <Modal open={klantModal} onClose={() => setKlantModal(false)} title={editKlant ? "Klant bewerken" : "Nieuwe klant toevoegen"}>
@@ -694,7 +721,7 @@ function AdminPortal({ klanten, setKlanten, soepen, setSoepen, deleteSoep, weekM
             <select value={newIngredient.eenheid} onChange={e => setNewIngredient(p => ({...p, eenheid:e.target.value}))} style={{ padding:"6px 4px", borderRadius:8, border:"1px solid #e8e0d0", fontFamily:"Lora,serif", fontSize:13 }}>
               {["g","kg","ml","l","stuk","el","tl"].map(e => <option key={e}>{e}</option>)}
             </select>
-            <input placeholder="€/kg" value={newIngredient.prijs_per_eenheid} onChange={e => setNewIngredient(p => ({...p, prijs_per_eenheid:e.target.value}))} style={{ padding:"6px 8px", borderRadius:8, border:"1px solid #e8e0d0", fontFamily:"Lora,serif", fontSize:13 }} />
+            <input placeholder={["g","kg","ml","l"].includes(newIngredient.eenheid) ? "€/kg of l" : "€/stuk"} value={newIngredient.prijs_per_eenheid} onChange={e => setNewIngredient(p => ({...p, prijs_per_eenheid:e.target.value}))} style={{ padding:"6px 8px", borderRadius:8, border:"1px solid #e8e0d0", fontFamily:"Lora,serif", fontSize:13 }} />
             <Btn small onClick={() => { if(newIngredient.naam) { setNewR(p => ({...p, ingredienten:[...p.ingredienten, {...newIngredient}]})); setNewIngredient({ naam:"", hoeveelheid:"", eenheid:"g", prijs_per_eenheid:0 }); } }}>+</Btn>
           </div>
         </div>
@@ -850,7 +877,7 @@ function KlantPortal({ klant, setKlant, soepen, weekMenu, setKlanten, klanten, b
                   <div style={{ fontWeight: 700, color: C.dark }}>Te betalen: <span style={{ color: C.rust }}>€{kostenBestelling.toFixed(2)}</span></div>
                 </div>
                 <br />
-                <Btn variant="secondary" onClick={() => { setBesteld({s1:false,s2:false}); setBestellingGedaan(false); }}>Nieuwe bestelling</Btn>
+                <Btn variant="secondary" onClick={() => { setAantal({ s1: 0, s2: 0, s3: 0 }); setBestellingGedaan(false); }}>Nieuwe bestelling</Btn>
               </Card>
             ) : (
               <>
@@ -1010,7 +1037,7 @@ function LoginScreen({ klanten, setKlanten, onLogin }) {
     if (!regNaam || !regEmail || !regPass) { setFout("Vul alle velden in."); return; }
     if (klanten.find(k => k.email === regEmail)) { setFout("Dit e-mailadres is al geregistreerd."); return; }
     const id = Math.max(0, ...klanten.map(k => k.id)) + 1;
-    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "ochtend", abonnee: false, aantalperweek: 1, actief: true, wachtend: false };
+    const nieuw = { id, naam: regNaam, email: regEmail, wachtwoord: regPass, tel: regTel, straat: "", gemeente: "", levering: "08:00", abonnee: false, aantalPerWeek: 1, actief: true, wachtend: false };
     await setKlanten([...klanten, nieuw]);
     setRegSuccess(true);
   }
@@ -1138,7 +1165,13 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [klanten, setKlanten] = useState([]);
   const [soepen,  setSoepen]  = useState([]);
-  const [recepten, setRecepten] = useState([]);
+  const [recepten, setReceptenRaw] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("soepronde-recepten")) || []; } catch { return []; }
+  });
+  function setRecepten(val) {
+    setReceptenRaw(val);
+    try { localStorage.setItem("soepronde-recepten", JSON.stringify(val)); } catch { /* opslag niet beschikbaar */ }
+  }
   const [weekMenu, setWeekMenuRaw] = useState([1, 2, null]);
   const [bestellingen, setBestellingen] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -1147,7 +1180,7 @@ export default function App() {
     async function laad() {
       try {
         const [k, b, w, sp] = await Promise.all([sbGet("klanten"), sbGet("bestellingen"), sbGet("weekmenu"), sbGet("soepen")]);
-        setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1})) : INIT_KLANTEN);
+        setKlanten(Array.isArray(k) && k.length > 0 ? k.map(x => ({...x, aantalPerWeek: x.aantalperweek || 1, levering: ALLE_SLOTEN.includes(x.levering) ? x.levering : (x.levering === "namiddag" ? "13:00" : "08:00")})) : INIT_KLANTEN);
         if (Array.isArray(b)) setBestellingen(b);
         if (Array.isArray(w) && w.length > 0) setWeekMenuRaw([w[0].soep1, w[0].soep2, w[0].soep3 || null]);
         if (Array.isArray(sp) && sp.length > 0) setSoepen(sp);
@@ -1164,7 +1197,7 @@ export default function App() {
   async function saveKlanten(val) {
     setKlanten(val);
     for (const k of val) {
-      await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: k.levering || "ochtend", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
+      await sbUpsert("klanten", { id: k.id, naam: k.naam, email: k.email, tel: k.tel || "", straat: k.straat || "", gemeente: k.gemeente || "", levering: ALLE_SLOTEN.includes(k.levering) ? k.levering : "08:00", abonnee: k.abonnee || false, aantalperweek: k.aantalPerWeek || 1, actief: k.actief !== false, wachtwoord: k.wachtwoord || "" });
     }
   }
 
@@ -1191,8 +1224,8 @@ export default function App() {
     const nieuw = val.find(b => !bestellingen.find(x => x.id === b.id));
     if (nieuw) await sbUpsert("bestellingen", nieuw);
     else {
-      const gewijzigd = val.find(b => { const o = bestellingen.find(x => x.id === b.id); return o && o.afgehandeld !== b.afgehandeld; });
-      if (gewijzigd) await sbPatch("bestellingen", gewijzigd.id, { afgehandeld: gewijzigd.afgehandeld });
+      const gewijzigd = val.filter(b => { const o = bestellingen.find(x => x.id === b.id); return o && o.afgehandeld !== b.afgehandeld; });
+      for (const g of gewijzigd) await sbPatch("bestellingen", g.id, { afgehandeld: g.afgehandeld });
     }
     setBestellingen(val);
   }
